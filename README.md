@@ -16,10 +16,12 @@ For example, having people in a school Minecraft server, and in order for them t
 ## Getting Started
 To use this mod correctly, the table needs to at least have this information in it.
 ```
-table name = server_whitelists
 uuid : UUID
 banned : Boolean
+tag : String (Optional - for placeholder api, can be called something other than tag)
 ```
+
+
 
 This mod also caches usernames and UUIDs locally to ban/unban offline players much more easily.
 If this is being added to a server that is already up, you can use the Python script provided in `scripts/convert.py` to correctly take the `usercache.json` file in the root directory of the server and make a file that should be placed in `config/whitelistdb`. This isn't completely necessary, as the cache will auto-update when new people join, but this will make sure that everyone who has ever joined will be detected by the mod.
@@ -32,6 +34,8 @@ Default layout of `config/whitelistdb-config.json`
   "host": "localhost",
   "port": 5432,
   "database": "minecraft",
+  "table": "server_whitelists",
+  "placeholder_column": "tag",
   "username": "postgres",
   "password": "password",
   "ssl": false,
@@ -42,7 +46,7 @@ Default layout of `config/whitelistdb-config.json`
 ```
 
 ## Mod Information
-Current version: 1.3.3
+Current version: 1.4.0
 
-Versions Supported: 26.1
+Versions Supported: 26.1.x
 

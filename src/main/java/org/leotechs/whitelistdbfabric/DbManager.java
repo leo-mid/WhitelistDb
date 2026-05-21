@@ -12,6 +12,8 @@ public class DbManager {
     private Connection conn;
     private static ConfigManager configManager;
     public static final Logger LOGGER = LoggerFactory.getLogger("whitelistdb");
+    private String table;
+    private String placeholder_column;
 
     /// Creates the DbManger object
     /// @param url - The database url
@@ -28,6 +30,9 @@ public class DbManager {
         if (!configDir.exists()) configDir.mkdirs();
 
         configManager = new ConfigManager(configDir);
+
+        this.table = configManager.get().getTable();
+        this.placeholder_column = configManager.get().getPlaceholderColumn();
     }
 
     /// Checks to see if the player logging in is whitelisted or not
@@ -48,7 +53,7 @@ public class DbManager {
             return false;
         }
 
-        try (PreparedStatement st = conn.prepareStatement("SELECT 1 FROM server_whitelists WHERE uuid = ? LIMIT 1")) {
+        try (PreparedStatement st = conn.prepareStatement("SELECT 1 FROM " + table + " WHERE uuid = ? LIMIT 1")) {
             st.setObject(1, uuid);
             try (ResultSet rs = st.executeQuery()) {
                 return rs.next();
@@ -77,7 +82,7 @@ public class DbManager {
             return false;
         }
 
-        try( PreparedStatement st = conn.prepareStatement("SELECT banned FROM server_whitelists WHERE uuid = ? LIMIT 1")) {
+        try( PreparedStatement st = conn.prepareStatement("SELECT banned FROM " + table + " WHERE uuid = ? LIMIT 1")) {
             st.setObject(1,uuid);
             try(ResultSet rs = st.executeQuery()) {
                 if(rs.next()) {
@@ -108,7 +113,7 @@ public class DbManager {
             return false;
         }
 
-        String sql = "UPDATE server_whitelists SET banned = true WHERE uuid = ?";
+        String sql = "UPDATE " + table + " SET banned = true WHERE uuid = ?";
         try {
             PreparedStatement st = conn.prepareStatement(sql);
             st.setObject(1, uuid);
@@ -138,7 +143,7 @@ public class DbManager {
             return false;
         }
 
-        String sql = "UPDATE server_whitelists SET banned = false WHERE uuid = ?";
+        String sql = "UPDATE " + table + " SET banned = false WHERE uuid = ?";
         try {
             PreparedStatement st = conn.prepareStatement(sql);
             st.setObject(1, uuid);
@@ -150,36 +155,35 @@ public class DbManager {
         return false;
     }
 
-    /// Gets the player school for the placeholderapi
-    /// @deprecated - was used for something else
+    /// Gets the players placeholder for placeholder api
     /// @param uuid - The players uuid
-    /// @return - The players school
+    /// @return - The players placeholder
 
-//    public String getPlayerSchool(UUID uuid){
-//        ConfigManager.Config cfg = configManager.get();
-//        if(conn == null){
-//            try {
-//                conn = DriverManager.getConnection(cfg.jdbcUrl(), cfg.getUsername(), cfg.getPassword());
-//            } catch (SQLException e) {
-//                LOGGER.error("Failed to connect to database", e);
-//            }
-//        }
-//
-//        if(conn == null){
-//            return null;
-//        }
-//
-//        String sql = "SELECT school FROM server_whitelists WHERE uuid = ? LIMIT 1";
-//        try{
-//            PreparedStatement st = conn.prepareStatement(sql);
-//            st.setObject(1, uuid);
-//            ResultSet rs = st.executeQuery();
-//            if(rs.next()){
-//                return rs.getString("school");
-//            }
-//        } catch (SQLException e){
-//            LOGGER.error("Failed to get school for user: ", e);
-//        }
-//        return null;
-//    }
+    public String getPlayerPlaceholder(UUID uuid){
+        ConfigManager.Config cfg = configManager.get();
+        if(conn == null){
+            try {
+                conn = DriverManager.getConnection(cfg.jdbcUrl(), cfg.getUsername(), cfg.getPassword());
+            } catch (SQLException e) {
+                LOGGER.error("Failed to connect to database", e);
+            }
+        }
+
+        if(conn == null){
+            return null;
+        }
+
+        String sql = "SELECT " + placeholder_column + " FROM " + table + " WHERE uuid = CAST(? AS uuid)";
+        try{
+            PreparedStatement st = conn.prepareStatement(sql);
+            st.setObject(1, uuid);
+            ResultSet rs = st.executeQuery();
+            if(rs.next()){
+                return rs.getString(placeholder_column);
+            }
+        } catch (SQLException e){
+            LOGGER.error("Failed to get placeholder for user: ", e);
+        }
+        return null;
+    }
 }

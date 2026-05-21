@@ -31,9 +31,9 @@ dependencies {
     implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
     implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-    include(implementation("me.lucko:fabric-permissions-api:${project.permission_version}"))
-    // include(implementation("eu.pb4:placeholder-api:${project.placeholderapi_version}"))
-    include(implementation("org.postgresql:postgresql:42.7.3"))
+    include implementation("me.lucko:fabric-permissions-api:${project.permission_version}")
+    include implementation("eu.pb4:placeholder-api:${project.placeholderapi_version}")
+    include implementation("org.postgresql:postgresql:42.7.3")
 }
 
 processResources {

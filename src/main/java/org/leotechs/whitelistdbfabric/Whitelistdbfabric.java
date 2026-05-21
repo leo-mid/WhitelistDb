@@ -4,8 +4,8 @@ import com.mojang.authlib.GameProfile;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-//import eu.pb4.placeholders.api.Placeholders;
-//import eu.pb4.placeholders.api.PlaceholderResult;
+import eu.pb4.placeholders.api.Placeholders;
+import eu.pb4.placeholders.api.PlaceholderResult;
 import me.lucko.fabric.api.permissions.v0.Permissions;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
@@ -13,9 +13,9 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerLoginConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.ChatFormatting;
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.commands.Commands;
+import net.minecraft.commands.*;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.players.PlayerList;
@@ -51,29 +51,24 @@ public class Whitelistdbfabric implements ModInitializer {
         PlayerCache.init();
 
         // Cache players on join
-        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
-            PlayerCache.cachePlayer(handler.getPlayer());
-        });
+        ServerPlayConnectionEvents.JOIN.register((handler, _, _) -> PlayerCache.cachePlayer(handler.getPlayer()));
 
         whitelistHandler = new WhitelistHandler(dbManager, configManager);
 
         registerCommands();
         registerEvents();
 
-        /// Registered the placeholder
-        /// @deprecated
+        Placeholders.registerCommon(Identifier.tryBuild("whitelistdb", "playerinfo"), (ctx, arg) -> {
+            if (arg == null) {
+                return PlaceholderResult.invalid("No argument!");
+            }
 
-//        Placeholders.register(Identifier.of("whitelistdb", "school"), (ctx, arg) -> {
-//            if (arg == null) {
-//                return PlaceholderResult.invalid("No argument!");
-//            }
-//
-//            assert ctx.player() != null;
-//            UUID uuid = ctx.player().getUuid();
-//            String school = dbManager.getPlayerSchool(uuid);
-//
-//            return PlaceholderResult.value(school);
-//        });
+            assert ctx.player() != null;
+            UUID uuid = ctx.player().getUUID();
+            String school = dbManager.getPlayerPlaceholder(uuid);
+
+            return PlaceholderResult.value(school);
+        });
 
         System.out.println("[WhitelistDB] Loaded config and initialized database connection.");
     }
@@ -203,7 +198,7 @@ public class Whitelistdbfabric implements ModInitializer {
     /// @param server - the server object
     /// @param username - the username of the player
     /// @return - if the player is online
-
+    /// @deprecated
     public boolean isPlayerConnected(MinecraftServer server, String username) {
         UUID uuid = PlayerCache.getUuid(username);
         ServerPlayer player = server.getPlayerList().getPlayer(uuid);
