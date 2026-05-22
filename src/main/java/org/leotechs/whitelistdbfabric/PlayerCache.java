@@ -4,7 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 import org.jetbrains.annotations.UnknownNullability;
 
 import java.io.Reader;
@@ -30,9 +30,9 @@ public class PlayerCache {
     /// Caches player when they join
     /// @param player - the player who just logged in
 
-    public static void cachePlayer(@UnknownNullability ServerPlayerEntity player) {
+    public static void cachePlayer(@UnknownNullability ServerPlayer player) {
         String name = player.getName().getString().toLowerCase(Locale.ROOT);
-        UUID uuid = player.getUuid();
+        UUID uuid = player.getUUID();
 
         CACHE.put(name, uuid);
         save();
