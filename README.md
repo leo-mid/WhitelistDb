@@ -48,7 +48,9 @@ The placeholder for this mod varries depending on the version.
 * 26.1.x - `%whitelistdb:playerinfo%`
 
 ## Mod Information
-Current version: 1.4.0
+Current version: 1.4.1
 
-Versions Supported: 1.21.x - 26.1.x
+Currently Supported: 26.1.x
+
+No longer Supported: 1.21.x
 
