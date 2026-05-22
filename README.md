@@ -21,8 +21,6 @@ banned : Boolean
 tag : String (Optional - for placeholder api, can be called something other than tag)
 ```
 
-
-
 This mod also caches usernames and UUIDs locally to ban/unban offline players much more easily.
 If this is being added to a server that is already up, you can use the Python script provided in `scripts/convert.py` to correctly take the `usercache.json` file in the root directory of the server and make a file that should be placed in `config/whitelistdb`. This isn't completely necessary, as the cache will auto-update when new people join, but this will make sure that everyone who has ever joined will be detected by the mod.
 
@@ -45,8 +43,12 @@ Default layout of `config/whitelistdb-config.json`
 }
 ```
 
+The placeholder for this mod varries depending on the version.
+* 1.21.x - `%whitelistdb:school%`
+* 26.1.x - `%whitelistdb:playerinfo%`
+
 ## Mod Information
 Current version: 1.4.0
 
-Versions Supported: 26.1.x
+Versions Supported: 1.21.x - 26.1.x
 
