@@ -1,0 +1,16 @@
+plugins {
+    id 'net.neoforged.gradle.userdev' version '7.0.+'
+}
+
+base { archivesName = "${project.archives_base_name}-neoforge" }
+
+dependencies {
+    implementation "net.neoforged:neoforge:${project.neoforge_version}"
+    implementation 'org.postgresql:postgresql:42.7.3'
+    implementation project(':common')
+}
+
+runs {
+    configureEach { systemProperty 'forge.logging.markers', 'REGISTRIES' }
+    server { workingDirectory project.file('run') }
+}

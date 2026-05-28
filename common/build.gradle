@@ -1,0 +1,5 @@
+dependencies {
+    compileOnly 'org.slf4j:slf4j-api:2.0.13'
+    compileOnly 'com.google.code.gson:gson:2.10.1'
+    implementation 'org.postgresql:postgresql:42.7.3'
+}

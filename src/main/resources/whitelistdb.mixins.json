@@ -1,8 +1,0 @@
-{
-  "required": true,
-  "package": "org.leotechs.whitelistdbfabric.mixin",
-  "compatibilityLevel": "JAVA_17",
-  "mixins": [
-    "ServerLoginNetworkHandlerAccessor"
-  ]
-}

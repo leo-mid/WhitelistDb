@@ -7,7 +7,6 @@
   "authors": ["Leo Midili"],
   "contact": {},
   "license": "All-Rights-Reserved",
-  "icon": "assets/whitelistdbfabric/icon.png",
   "environment": "server",
   "entrypoints": {
     "main": [

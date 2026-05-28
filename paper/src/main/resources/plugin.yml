@@ -1,0 +1,11 @@
+name: WhitelistDb
+version: '${version}'
+main: org.leotechs.whitelistdb.paper.WhitelistDbPaper
+api-version: '1.21'
+commands:
+  whitelistdb:
+    description: Toggle whitelist
+  wban:
+    description: Ban a player
+  wunban:
+    description: Unban a player
