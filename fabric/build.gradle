@@ -1,12 +1,12 @@
 plugins {
-    id 'net.fabricmc.fabric-loom' version '1.16-SNAPSHOT'
+    id 'net.fabricmc.fabric-loom'
+    id 'java'
 }
 
 base { archivesName = "${project.archives_base_name}-fabric" }
 
 dependencies {
     minecraft     "com.mojang:minecraft:${project.minecraft_version}"
-    mappings      loom.officialMojangMappings()
     implementation "net.fabricmc:fabric-loader:${project.loader_version}"
     implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 

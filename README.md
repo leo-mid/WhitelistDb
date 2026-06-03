@@ -6,12 +6,12 @@ For example, having people in a school Minecraft server, and in order for them t
 
 ## Commands
 * /whitelistdb toggle
-    * Turns the whitelist on and off
+  * Turns the whitelist on and off
 * /wban
-    * Updates the database record to show they are banned across **all servers!**
-    * Will kick the player if they are online - does work on players who aren't online
+  * Updates the database record to show they are banned across **all servers!**
+  * Will kick the player if they are online - does work on players who aren't online
 * /wunban
-    * Updates the database record to show they are unbanned across **all servers!**
+  * Updates the database record to show they are unbanned across **all servers!**
 
 ## Getting Started
 To use this mod correctly, the table needs to at least have this information in it.

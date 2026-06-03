@@ -1,11 +1,26 @@
 name: WhitelistDb
 version: '${version}'
 main: org.leotechs.whitelistdb.paper.WhitelistDbPaper
-api-version: '1.21'
+api-version: '26.1.1'
+description: Database-backed whitelist for Paper servers.
+authors:
+  - Leo Midili
+
 commands:
   whitelistdb:
-    description: Toggle whitelist
+    description: Toggle the database whitelist on/off.
+    usage: /whitelistdb toggle
+    permission: whitelistdb.admin
   wban:
-    description: Ban a player
+    description: Ban a player in the database across all servers.
+    usage: /wban <player>
+    permission: whitelistdb.admin
   wunban:
-    description: Unban a player
+    description: Unban a player in the database across all servers.
+    usage: /wunban <player>
+    permission: whitelistdb.admin
+
+permissions:
+  whitelistdb.admin:
+    description: Access to all WhitelistDB commands.
+    default: op

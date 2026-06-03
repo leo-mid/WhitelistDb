@@ -1,9 +1,8 @@
-package org.leotechs.whitelistdbfabric;
+package org.leotechs.whitelistdb;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.sql.*;
 import java.util.UUID;
 
@@ -15,174 +14,101 @@ public class DbManager {
     private String table;
     private String placeholder_column;
 
-    /// Creates the DbManger object
-    /// @param url - The database url
-    /// @param user - The database user
-    /// @param pass - The database password
-
-    public DbManager(String url, String user, String pass) {
+    public DbManager(ConfigManager configManager) {
+        DbManager.configManager = configManager;
+        ConfigManager.Config cfg = configManager.get();
+        this.table = cfg.getTable();
+        this.placeholder_column = cfg.getPlaceholderColumn();
         try {
-            conn = DriverManager.getConnection(url, user, pass);
+            conn = DriverManager.getConnection(cfg.jdbcUrl(), cfg.getUsername(), cfg.getPassword());
+            LOGGER.info("Connected to database successfully.");
         } catch (SQLException e) {
             LOGGER.error("Failed to connect to database", e);
         }
-        File configDir = new File("config");
-        if (!configDir.exists()) configDir.mkdirs();
-
-        configManager = new ConfigManager(configDir);
-
-        this.table = configManager.get().getTable();
-        this.placeholder_column = configManager.get().getPlaceholderColumn();
     }
 
-    /// Checks to see if the player logging in is whitelisted or not
-    /// @param uuid - the players uuid
-    /// @return - if the player is whitelsited or not
+    private Connection getConnection() {
+        ConfigManager.Config cfg = configManager.get();
+        try {
+            if (conn == null || conn.isClosed()) {
+                conn = DriverManager.getConnection(cfg.jdbcUrl(), cfg.getUsername(), cfg.getPassword());
+            }
+        } catch (SQLException e) {
+            LOGGER.error("Failed to reconnect to database", e);
+            conn = null;
+        }
+        return conn;
+    }
 
     public boolean isPlayerWhitelisted(UUID uuid) {
-        ConfigManager.Config cfg = configManager.get();
-        if(conn == null){
-            try {
-                conn = DriverManager.getConnection(cfg.jdbcUrl(), cfg.getUsername(), cfg.getPassword());
-            } catch (SQLException e) {
-                LOGGER.error("Failed to connect to database", e);
-            }
-        }
-
-        if(conn == null){
-            return false;
-        }
-
-        try (PreparedStatement st = conn.prepareStatement("SELECT 1 FROM " + table + " WHERE uuid = ? LIMIT 1")) {
-            st.setObject(1, uuid);
+        Connection c = getConnection();
+        if (c == null) return false;
+        try (PreparedStatement st = c.prepareStatement(
+                "SELECT 1 FROM " + table + " WHERE uuid = CAST(? AS uuid) LIMIT 1")) {
+            st.setString(1, uuid.toString());
             try (ResultSet rs = st.executeQuery()) {
                 return rs.next();
             }
         } catch (SQLException e) {
-            LOGGER.error("Failed to connect to database", e);
+            LOGGER.error("Failed to check whitelist for {}", uuid, e);
         }
         return false;
     }
-
-    /// Checks to see if the player logging in is banned
-    /// @param uuid - the players uuid
-    /// @return - if the player is banned or not
 
     public boolean isPlayerBanned(UUID uuid) {
-        ConfigManager.Config cfg = configManager.get();
-        if(conn == null){
-            try {
-                conn = DriverManager.getConnection(cfg.jdbcUrl(), cfg.getUsername(), cfg.getPassword());
-            } catch (SQLException e) {
-                LOGGER.error("Failed to connect to database", e);
-            }
-        }
-
-        if(conn == null){
-            return false;
-        }
-
-        try( PreparedStatement st = conn.prepareStatement("SELECT banned FROM " + table + " WHERE uuid = ? LIMIT 1")) {
-            st.setObject(1,uuid);
-            try(ResultSet rs = st.executeQuery()) {
-                if(rs.next()) {
-                    return rs.getBoolean("banned");
-                }
+        Connection c = getConnection();
+        if (c == null) return false;
+        try (PreparedStatement st = c.prepareStatement(
+                "SELECT banned FROM " + table + " WHERE uuid = CAST(? AS uuid) LIMIT 1")) {
+            st.setString(1, uuid.toString());
+            try (ResultSet rs = st.executeQuery()) {
+                if (rs.next()) return rs.getBoolean("banned");
             }
         } catch (SQLException e) {
-            LOGGER.error("Failed to see if user is banned. Is the user in the whitelist?r");
+            LOGGER.error("Failed to check ban status for {}", uuid, e);
         }
         return false;
     }
 
-    /// Ban the player given by the uuid
-    /// @param uuid - The players uuid
-    /// @return - If it was successful or not
-
-    public boolean banPlayer(UUID uuid){
-        ConfigManager.Config cfg = configManager.get();
-        if(conn == null){
-            try {
-                conn = DriverManager.getConnection(cfg.jdbcUrl(), cfg.getUsername(), cfg.getPassword());
-            } catch (SQLException e) {
-                LOGGER.error("Failed to connect to database", e);
-            }
-        }
-
-        if(conn == null){
-            return false;
-        }
-
-        String sql = "UPDATE " + table + " SET banned = true WHERE uuid = ?";
-        try {
-            PreparedStatement st = conn.prepareStatement(sql);
-            st.setObject(1, uuid);
+    public boolean banPlayer(UUID uuid) {
+        Connection c = getConnection();
+        if (c == null) return false;
+        try (PreparedStatement st = c.prepareStatement(
+                "UPDATE " + table + " SET banned = true WHERE uuid = CAST(? AS uuid)")) {
+            st.setString(1, uuid.toString());
             st.executeUpdate();
             return true;
         } catch (SQLException e) {
-            LOGGER.error("Failed to ban the user: ", e);
+            LOGGER.error("Failed to ban player {}", uuid, e);
         }
         return false;
     }
 
-    /// Unbans the player given by the uuid
-    /// @param uuid - The players uuid
-    /// @return - If it was successful or not
-
-    public boolean unbanPlayer(UUID uuid){
-        ConfigManager.Config cfg = configManager.get();
-        if(conn == null){
-            try {
-                conn = DriverManager.getConnection(cfg.jdbcUrl(), cfg.getUsername(), cfg.getPassword());
-            } catch (SQLException e) {
-                LOGGER.error("Failed to connect to database", e);
-            }
-        }
-
-        if(conn == null){
-            return false;
-        }
-
-        String sql = "UPDATE " + table + " SET banned = false WHERE uuid = ?";
-        try {
-            PreparedStatement st = conn.prepareStatement(sql);
-            st.setObject(1, uuid);
+    public boolean unbanPlayer(UUID uuid) {
+        Connection c = getConnection();
+        if (c == null) return false;
+        try (PreparedStatement st = c.prepareStatement(
+                "UPDATE " + table + " SET banned = false WHERE uuid = CAST(? AS uuid)")) {
+            st.setString(1, uuid.toString());
             st.executeUpdate();
             return true;
         } catch (SQLException e) {
-            LOGGER.error("Failed to unban the user: ", e);
+            LOGGER.error("Failed to unban player {}", uuid, e);
         }
         return false;
     }
 
-    /// Gets the players placeholder for placeholder api
-    /// @param uuid - The players uuid
-    /// @return - The players placeholder
-
-    public String getPlayerPlaceholder(UUID uuid){
-        ConfigManager.Config cfg = configManager.get();
-        if(conn == null){
-            try {
-                conn = DriverManager.getConnection(cfg.jdbcUrl(), cfg.getUsername(), cfg.getPassword());
-            } catch (SQLException e) {
-                LOGGER.error("Failed to connect to database", e);
+    public String getPlayerPlaceholder(UUID uuid) {
+        Connection c = getConnection();
+        if (c == null) return null;
+        try (PreparedStatement st = c.prepareStatement(
+                "SELECT " + placeholder_column + " FROM " + table + " WHERE uuid = CAST(? AS uuid)")) {
+            st.setString(1, uuid.toString());
+            try (ResultSet rs = st.executeQuery()) {
+                if (rs.next()) return rs.getString(placeholder_column);
             }
-        }
-
-        if(conn == null){
-            return null;
-        }
-
-        String sql = "SELECT " + placeholder_column + " FROM " + table + " WHERE uuid = CAST(? AS uuid)";
-        try{
-            PreparedStatement st = conn.prepareStatement(sql);
-            st.setObject(1, uuid);
-            ResultSet rs = st.executeQuery();
-            if(rs.next()){
-                return rs.getString(placeholder_column);
-            }
-        } catch (SQLException e){
-            LOGGER.error("Failed to get placeholder for user: ", e);
+        } catch (SQLException e) {
+            LOGGER.error("Failed to get placeholder for {}", uuid, e);
         }
         return null;
     }

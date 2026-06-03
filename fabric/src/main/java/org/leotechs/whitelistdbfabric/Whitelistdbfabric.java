@@ -3,7 +3,6 @@ package org.leotechs.whitelistdbfabric;
 import com.mojang.authlib.GameProfile;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import eu.pb4.placeholders.api.Placeholders;
 import eu.pb4.placeholders.api.PlaceholderResult;
 import me.lucko.fabric.api.permissions.v0.Permissions;
@@ -13,26 +12,33 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerLoginConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.ChatFormatting;
-import net.minecraft.commands.*;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.players.PlayerList;
+import org.leotechs.whitelistdb.ConfigManager;
+import org.leotechs.whitelistdb.DbManager;
+import org.leotechs.whitelistdb.PlayerCache;
+import org.leotechs.whitelistdb.WhitelistHandler;
 import org.leotechs.whitelistdbfabric.mixin.ServerLoginNetworkHandlerAccessor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.UUID;
 
 public class Whitelistdbfabric implements ModInitializer {
 
     public static final String MODID = "whitelistdb";
+    private static final Logger LOGGER = LoggerFactory.getLogger(MODID);
 
     private static WhitelistHandler whitelistHandler;
     private static ConfigManager configManager;
-    private DbManager dbManager;
-
-    /// Starts up the mod and gets everything ready
+    private static DbManager dbManager;
 
     @Override
     public void onInitialize() {
@@ -40,54 +46,85 @@ public class Whitelistdbfabric implements ModInitializer {
         if (!configDir.exists()) configDir.mkdirs();
 
         configManager = new ConfigManager(configDir);
-        ConfigManager.Config cfg = configManager.get();
+        dbManager     = new DbManager(configManager);
 
-        this.dbManager = new DbManager(
-                cfg.jdbcUrl(),
-                cfg.getUsername(),
-                cfg.getPassword()
-        );
-
-        PlayerCache.init();
-
-        // Cache players on join
-        ServerPlayConnectionEvents.JOIN.register((handler, _, _) -> PlayerCache.cachePlayer(handler.getPlayer()));
+        PlayerCache.init(Path.of("config"));
 
         whitelistHandler = new WhitelistHandler(dbManager, configManager);
 
-        registerCommands();
         registerEvents();
+        registerCommands();
+        registerPlaceholders();
 
-        Placeholders.registerCommon(Identifier.tryBuild("whitelistdb", "playerinfo"), (ctx, arg) -> {
-            if (arg == null) {
-                return PlaceholderResult.invalid("No argument!");
-            }
-
-            assert ctx.player() != null;
-            UUID uuid = ctx.player().getUUID();
-            String school = dbManager.getPlayerPlaceholder(uuid);
-
-            return PlaceholderResult.value(school);
-        });
-
-        System.out.println("[WhitelistDB] Loaded config and initialized database connection.");
+        LOGGER.info("[WhitelistDB] Loaded. Whitelist enabled = {}", configManager.isEnabled());
     }
 
-    /// Makes the commands work by registering them
+    // -------------------------------------------------------------------------
+    //  Placeholders
+    // -------------------------------------------------------------------------
+
+    private void registerPlaceholders() {
+        Placeholders.registerCommon(
+                Identifier.fromNamespaceAndPath(MODID, "playerinfo"),
+                (ctx, arg) -> {
+                    if (ctx.player() == null) return PlaceholderResult.invalid("No player context");
+                    UUID uuid  = ctx.player().getUUID();
+                    String val = dbManager.getPlayerPlaceholder(uuid);
+                    return val != null ? PlaceholderResult.value(val) : PlaceholderResult.value("");
+                }
+        );
+    }
+
+    // -------------------------------------------------------------------------
+    //  Events
+    // -------------------------------------------------------------------------
+
+    private void registerEvents() {
+        // Cache player name → UUID on join
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
+                PlayerCache.cachePlayer(
+                        handler.getPlayer().getGameProfile().name(),
+                        handler.getPlayer().getUUID()
+                )
+        );
+
+        // Check whitelist / ban on login
+        ServerLoginConnectionEvents.QUERY_START.register((handler, server, sender, synchronizer) -> {
+            GameProfile profile = ((ServerLoginNetworkHandlerAccessor) handler).getProfile();
+            if (profile == null) return;
+            UUID uuid = profile.id();
+
+            if (!whitelistHandler.allowPlayer(uuid)) {
+                handler.disconnect(Component.literal(configManager.getMessage()));
+                return;
+            }
+            if (!whitelistHandler.checkBanned(uuid)) {
+                handler.disconnect(Component.literal(configManager.getBanReason())
+                        .withStyle(ChatFormatting.RED));
+            }
+        });
+
+        ServerLifecycleEvents.SERVER_STARTED.register(server ->
+                LOGGER.info("[WhitelistDB] Server started. Whitelist enabled = {}",
+                        whitelistHandler.isWhitelistEnabled()));
+    }
+
+    // -------------------------------------------------------------------------
+    //  Commands
+    // -------------------------------------------------------------------------
 
     private void registerCommands() {
-        CommandRegistrationCallback.EVENT.register(
-                (dispatcher, _, _) -> dispatcher.register(
+        // /whitelistdb toggle
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
+                dispatcher.register(
                         Commands.literal("whitelistdb")
                                 .then(Commands.literal("toggle")
-                                        .requires(source -> Permissions.check(source, "whitelistdb.admin", 4))
+                                        .requires(src -> Permissions.check(src, "whitelistdb.admin", 4))
                                         .executes(ctx -> {
                                             whitelistHandler.toggleWhitelist();
+                                            boolean enabled = whitelistHandler.isWhitelistEnabled();
                                             ctx.getSource().sendSuccess(
-                                                    () -> Component.literal(
-                                                            "Whitelist is now "
-                                                                    + (whitelistHandler.isWhitelistEnabled() ? "ENABLED" : "DISABLED")
-                                                    ),
+                                                    () -> Component.literal("Whitelist is now " + (enabled ? "ENABLED" : "DISABLED")),
                                                     true
                                             );
                                             return 1;
@@ -95,113 +132,78 @@ public class Whitelistdbfabric implements ModInitializer {
                                 )
                 )
         );
-        CommandRegistrationCallback.EVENT.register(
-                (dispatcher, _, _) -> dispatcher.register(
+
+        // /wban <player>
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
+                dispatcher.register(
                         Commands.literal("wban")
-                            .requires(source -> Permissions.check(source, "whitelistdb.admin", 4))
+                                .requires(src -> Permissions.check(src, "whitelistdb.admin", 4))
                                 .then(Commands.argument("player", StringArgumentType.greedyString())
-                                .executes(this::banPlayer))
-        ));
-        CommandRegistrationCallback.EVENT.register(
-                (dispatcher, _, _) -> dispatcher.register(
+                                        .executes(this::banPlayer))
+                )
+        );
+
+        // /wunban <player>
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
+                dispatcher.register(
                         Commands.literal("wunban")
-                            .requires(source -> Permissions.check(source, "whitelistdb.admin", 4))
+                                .requires(src -> Permissions.check(src, "whitelistdb.admin", 4))
                                 .then(Commands.argument("player", StringArgumentType.greedyString())
-                                .executes(this::unbanPlayer))
-        ));
+                                        .executes(this::unbanPlayer))
+                )
+        );
     }
 
-    /// The command to ban a player
-    /// @param context - information passed by the command
-    /// @return - if the command worked or not
+    private int banPlayer(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack source = ctx.getSource();
+        String name = StringArgumentType.getString(ctx, "player");
 
-    private int banPlayer(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
-        CommandSourceStack source = context.getSource();
-        String playerToBan = StringArgumentType.getString(context, "player");
+        MinecraftServer server   = source.getServer();
+        PlayerList playerList    = server.getPlayerList();
+        ServerPlayer onlinePlayer = playerList.getPlayerByName(name);
 
-        if (playerToBan != null) {
-            String reason = configManager.getBanReason();
-
-            MinecraftServer server = source.getServer();
-            PlayerList playerManager = server.getPlayerList();
-            ServerPlayer player = playerManager.getPlayerByName(playerToBan);
-            if(player != null){
-                if(dbManager.banPlayer(player.getUUID())){
-                    player.connection.disconnect(Component.literal(reason).withStyle(ChatFormatting.RED));
-                    source.sendSuccess(() -> Component.literal("Banned player: " + playerToBan), true);
-                    return 1;
-                }
-            } else {
-                UUID uuid = PlayerCache.getUuid(playerToBan);
-                if(uuid != null){
-                    if(dbManager.banPlayer(uuid)){
-                        source.sendSuccess(() -> Component.literal("Banned player: " + playerToBan), true);
-                        return 1;
-                    }
-                }
-            }
-
-            source.sendFailure(Component.nullToEmpty("Player: " + playerToBan + " not found."));
-            return 0;
+        UUID uuid;
+        if (onlinePlayer != null) {
+            uuid = onlinePlayer.getUUID();
         } else {
-            source.sendSuccess(() -> Component.literal("Forgot to add the player to ban"), true);
+            uuid = PlayerCache.getUuid(name);
+        }
+
+        if (uuid == null) {
+            source.sendFailure(Component.literal("Player '" + name + "' not found in cache."));
             return 0;
         }
-    }
 
-    /// The command to unban a player
-    /// @param context - information passed by the command
-    /// @return - if the command worked or not
-
-    private int unbanPlayer(CommandContext<CommandSourceStack> context) {
-        CommandSourceStack source = context.getSource();
-        String playerToUnban = StringArgumentType.getString(context, "player");
-
-        UUID uuid = PlayerCache.getUuid(playerToUnban);
-
-        if (uuid != null) {
-            if(dbManager.unbanPlayer(uuid)){
-                source.sendSuccess(() -> Component.literal("Player: " + playerToUnban + " has been unbanned!"), true);
-                return 1;
+        if (dbManager.banPlayer(uuid)) {
+            // Kick if online
+            if (onlinePlayer != null) {
+                onlinePlayer.connection.disconnect(
+                        Component.literal(configManager.getBanReason()).withStyle(ChatFormatting.RED));
             }
-        } else {
-            source.sendFailure(Component.nullToEmpty("Player: " + playerToUnban + " not found."));
+            source.sendSuccess(() -> Component.literal("Banned player: " + name), true);
+            return 1;
         }
+
+        source.sendFailure(Component.literal("Failed to ban player: " + name));
         return 0;
     }
 
-    /// Checks the player if they are banned or whitelisted before fully connecting to the server
+    private int unbanPlayer(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack source = ctx.getSource();
+        String name = StringArgumentType.getString(ctx, "player");
 
-    private void registerEvents() {
-        ServerLoginConnectionEvents.QUERY_START.register(
-                (handler, server, sender, synchronizer) -> {
+        UUID uuid = PlayerCache.getUuid(name);
+        if (uuid == null) {
+            source.sendFailure(Component.literal("Player '" + name + "' not found in cache."));
+            return 0;
+        }
 
-                    GameProfile profile = ((ServerLoginNetworkHandlerAccessor) handler).getProfile();
-                    UUID uuid = profile.id();
+        if (dbManager.unbanPlayer(uuid)) {
+            source.sendSuccess(() -> Component.literal("Unbanned player: " + name), true);
+            return 1;
+        }
 
-                    if (!whitelistHandler.allowPlayer(uuid)) {
-                        handler.disconnect(Component.literal(configManager.getMessage()));
-                    }
-                    if(!whitelistHandler.checkBanned(uuid)) {
-                        handler.disconnect(Component.literal(configManager.getBanReason()));
-                    }
-                }
-        );
-
-        ServerLifecycleEvents.SERVER_STARTED.register(server -> {
-            System.out.println("[WhitelistDB] Whitelist enabled = "
-                    + whitelistHandler.isWhitelistEnabled());
-        });
-    }
-
-    /// Checks to see if the player that is being mentioned is currently online
-    /// @param server - the server object
-    /// @param username - the username of the player
-    /// @return - if the player is online
-    /// @deprecated
-    public boolean isPlayerConnected(MinecraftServer server, String username) {
-        UUID uuid = PlayerCache.getUuid(username);
-        ServerPlayer player = server.getPlayerList().getPlayer(uuid);
-        return player != null;
+        source.sendFailure(Component.literal("Failed to unban player: " + name));
+        return 0;
     }
 }

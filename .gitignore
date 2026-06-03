@@ -100,8 +100,12 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
+# .gradle folders
 .gradle
 build/
+fabric/.gradle
+forge/.gradle
+paper/.gradle
 
 # Ignore Gradle GUI config
 gradle-app.setting
