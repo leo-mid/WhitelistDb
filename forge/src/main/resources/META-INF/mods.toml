@@ -1,0 +1,24 @@
+modLoader = "javafml"
+loaderVersion = "[4,)"
+license = "All-Rights-Reserved"
+
+[[mods]]
+modId            = "whitelistdb"
+version          = "${file.jarVersion}"
+displayName      = "WhitelistDb"
+description      = "Database-backed whitelist for NeoForge servers."
+logoFile         = "whitelistdb-logo.png"
+
+[[dependencies.whitelistdb]]
+modId       = "neoforge"
+type        = "required"
+versionRange = "[26.1,)"
+ordering    = "NONE"
+side        = "SERVER"
+
+[[dependencies.whitelistdb]]
+modId       = "minecraft"
+type        = "required"
+versionRange = "[26.1,)"
+ordering    = "NONE"
+side        = "SERVER"

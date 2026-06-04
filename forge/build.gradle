@@ -1,0 +1,31 @@
+plugins {
+    id 'net.neoforged.moddev'
+    id 'java'
+}
+
+base { archivesName = "${project.archives_base_name}-neoforge-${project.neoforge_version}" }
+
+neoForge {
+    enable {
+        version = project.neoforge_version
+        disableRecompilation = true
+    }
+
+    mods {
+        whitelistdb {
+            sourceSet(sourceSets.main)
+        }
+    }
+}
+
+dependencies {
+    jarJar(implementation("org.postgresql:postgresql:42.7.3"))
+
+    jarJar(implementation project(':common'))
+}
+
+jar {
+    manifest {
+        attributes 'Implementation-Version': project.version
+    }
+}

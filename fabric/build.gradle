@@ -1,0 +1,30 @@
+plugins {
+    id 'net.fabricmc.fabric-loom'
+    id 'java'
+}
+
+base { archivesName = "${project.archives_base_name}-fabric-${project.minecraft_version}" }
+
+dependencies {
+    minecraft     "com.mojang:minecraft:${project.minecraft_version}"
+    implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+
+    include implementation("me.lucko:fabric-permissions-api:${project.permission_version}")
+    include implementation("eu.pb4:placeholder-api:${project.placeholderapi_version}")
+    include implementation("org.postgresql:postgresql:42.7.3")
+
+    include project(':common')
+    implementation project(':common')
+}
+
+processResources {
+    inputs.property "version",           project.version
+    inputs.property "minecraft_version", project.minecraft_version
+    inputs.property "loader_version",    project.loader_version
+    filesMatching("fabric.mod.json") {
+        expand "version"          : project.version,
+                "minecraft_version": project.minecraft_version,
+                "loader_version"   : project.loader_version
+    }
+}
