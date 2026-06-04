@@ -50,7 +50,7 @@ The placeholder for this mod varries depending on the version.
 Please note that currently paper and neoforge **does not** support placeholders!
 
 ## Mod Information
-Current version: 1.5.0-beta
+Current version: 1.5.0
 
 Currently Supported: 26.1.x
 
