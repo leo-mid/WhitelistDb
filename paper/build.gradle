@@ -1,10 +1,17 @@
 plugins {
     id 'java'
-    id 'io.papermc.paperweight.userdev' version '2.0.0-beta.21'
+}
+
+repositories {
+    maven {
+        name = "papermc"
+        url = uri("https://repo.papermc.io/repository/maven-public/")
+    }
+    mavenCentral()
 }
 
 base {
-    archivesName = "${project.archives_base_name}-paper-${project.paper_version}"
+    archivesName.set("${project.archives_base_name}-paper-${project.paper_version}")
 }
 
 configurations {
@@ -12,22 +19,12 @@ configurations {
 }
 
 dependencies {
-    paperweight.paperDevBundle("${project.paper_version}")
+    compileOnly("io.papermc.paper:paper-api:${project.paper_version}")
 
-    implementation project(':common')
+    implementation(project(":common"))
+    embed(project(":common"))
 
-    implementation 'org.postgresql:postgresql:42.7.3'
-    embed 'org.postgresql:postgresql:42.7.3'
-}
-
-jar {
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-
-    from {
-        configurations.embed.collect { zipTree(it) }
-    }
-
-    archiveClassifier.set('')
+    embed("org.postgresql:postgresql:42.7.3")
 }
 
 processResources {
