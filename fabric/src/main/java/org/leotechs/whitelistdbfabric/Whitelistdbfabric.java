@@ -59,10 +59,6 @@ public class Whitelistdbfabric implements ModInitializer {
         LOGGER.info("[WhitelistDB] Loaded. Whitelist enabled = {}", configManager.isEnabled());
     }
 
-    // -------------------------------------------------------------------------
-    //  Placeholders
-    // -------------------------------------------------------------------------
-
     private void registerPlaceholders() {
         Placeholders.registerCommon(
                 Identifier.fromNamespaceAndPath(MODID, "playerinfo"),
@@ -75,12 +71,8 @@ public class Whitelistdbfabric implements ModInitializer {
         );
     }
 
-    // -------------------------------------------------------------------------
-    //  Events
-    // -------------------------------------------------------------------------
-
     private void registerEvents() {
-        // Cache player name → UUID on join
+
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
                 PlayerCache.cachePlayer(
                         handler.getPlayer().getGameProfile().name(),
@@ -88,7 +80,6 @@ public class Whitelistdbfabric implements ModInitializer {
                 )
         );
 
-        // Check whitelist / ban on login
         ServerLoginConnectionEvents.QUERY_START.register((handler, server, sender, synchronizer) -> {
             GameProfile profile = ((ServerLoginNetworkHandlerAccessor) handler).getProfile();
             if (profile == null) return;
@@ -109,12 +100,8 @@ public class Whitelistdbfabric implements ModInitializer {
                         whitelistHandler.isWhitelistEnabled()));
     }
 
-    // -------------------------------------------------------------------------
-    //  Commands
-    // -------------------------------------------------------------------------
-
     private void registerCommands() {
-        // /whitelistdb toggle
+
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
                 dispatcher.register(
                         Commands.literal("whitelistdb")
@@ -133,7 +120,6 @@ public class Whitelistdbfabric implements ModInitializer {
                 )
         );
 
-        // /wban <player>
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
                 dispatcher.register(
                         Commands.literal("wban")
@@ -143,7 +129,6 @@ public class Whitelistdbfabric implements ModInitializer {
                 )
         );
 
-        // /wunban <player>
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
                 dispatcher.register(
                         Commands.literal("wunban")
@@ -175,7 +160,7 @@ public class Whitelistdbfabric implements ModInitializer {
         }
 
         if (dbManager.banPlayer(uuid)) {
-            // Kick if online
+
             if (onlinePlayer != null) {
                 onlinePlayer.connection.disconnect(
                         Component.literal(configManager.getBanReason()).withStyle(ChatFormatting.RED));

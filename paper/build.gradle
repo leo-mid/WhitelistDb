@@ -3,16 +3,36 @@ plugins {
     id 'io.papermc.paperweight.userdev' version '2.0.0-beta.21'
 }
 
-base { archivesName = "${project.archives_base_name}-paper" }
+base {
+    archivesName = "${project.archives_base_name}-paper-${project.paper_version}"
+}
+
+configurations {
+    embed
+}
 
 dependencies {
     paperweight.paperDevBundle("${project.paper_version}")
-    implementation 'org.postgresql:postgresql:42.7.3'
+
     implementation project(':common')
+
+    implementation 'org.postgresql:postgresql:42.7.3'
+    embed 'org.postgresql:postgresql:42.7.3'
+}
+
+jar {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    from {
+        configurations.embed.collect { zipTree(it) }
+    }
+
+    archiveClassifier.set('')
 }
 
 processResources {
     inputs.property "version", project.version
+
     filesMatching("plugin.yml") {
         expand version: project.version
     }

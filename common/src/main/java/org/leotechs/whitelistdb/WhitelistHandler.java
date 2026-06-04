@@ -24,13 +24,13 @@ public class WhitelistHandler {
         config.save();
     }
 
-    /** Returns true if player is allowed to join (not whitelisted or is on the list). */
+    
     public boolean allowPlayer(UUID uuid) {
         if (!whitelistEnabled) return true;
         return db.isPlayerWhitelisted(uuid);
     }
 
-    /** Returns true if player is NOT banned (i.e. should be allowed through). */
+    
     public boolean checkBanned(UUID uuid) {
         return !db.isPlayerBanned(uuid);
     }

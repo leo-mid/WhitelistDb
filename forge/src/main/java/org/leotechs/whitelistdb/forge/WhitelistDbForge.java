@@ -46,7 +46,6 @@ public class WhitelistDbForge {
 
         PlayerCache.init(Path.of("config"));
 
-        // Register events on the NeoForge bus
         NeoForge.EVENT_BUS.addListener(this::onServerStarted);
         NeoForge.EVENT_BUS.addListener(this::onPlayerLogin);
         NeoForge.EVENT_BUS.addListener(this::onRegisterCommands);
@@ -59,16 +58,18 @@ public class WhitelistDbForge {
                 whitelistHandler.isWhitelistEnabled());
     }
 
+    
     private void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
 
         UUID uuid = player.getUUID();
-        PlayerCache.cachePlayer(player.getGameProfile().getName(), uuid);
+        PlayerCache.cachePlayer(player.getGameProfile().name(), uuid);
 
         if (!whitelistHandler.allowPlayer(uuid)) {
             player.connection.disconnect(Component.literal(configManager.getMessage()));
             return;
         }
+
         if (!whitelistHandler.checkBanned(uuid)) {
             player.connection.disconnect(
                     Component.literal(configManager.getBanReason()).withStyle(ChatFormatting.RED));
@@ -81,7 +82,7 @@ public class WhitelistDbForge {
         dispatcher.register(
                 Commands.literal("whitelistdb")
                         .then(Commands.literal("toggle")
-                                .requires(src -> src.hasPermission(4))
+                                .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                                 .executes(ctx -> {
                                     whitelistHandler.toggleWhitelist();
                                     boolean en = whitelistHandler.isWhitelistEnabled();
@@ -96,14 +97,14 @@ public class WhitelistDbForge {
 
         dispatcher.register(
                 Commands.literal("wban")
-                        .requires(src -> src.hasPermission(4))
+                        .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                         .then(Commands.argument("player", StringArgumentType.greedyString())
                                 .executes(this::banPlayer))
         );
 
         dispatcher.register(
                 Commands.literal("wunban")
-                        .requires(src -> src.hasPermission(4))
+                        .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                         .then(Commands.argument("player", StringArgumentType.greedyString())
                                 .executes(this::unbanPlayer))
         );

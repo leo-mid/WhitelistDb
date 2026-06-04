@@ -3,7 +3,7 @@ plugins {
     id 'java'
 }
 
-base { archivesName = "${project.archives_base_name}-fabric" }
+base { archivesName = "${project.archives_base_name}-fabric-${project.minecraft_version}" }
 
 dependencies {
     minecraft     "com.mojang:minecraft:${project.minecraft_version}"

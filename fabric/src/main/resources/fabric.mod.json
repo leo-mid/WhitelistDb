@@ -4,7 +4,9 @@
   "version": "${version}",
   "name": "WhitelistDbFabric",
   "description": "A fabric mod that connects to a postgres database",
-  "authors": ["Leo Midili"],
+  "authors": [
+    "Leo Midili"
+  ],
   "contact": {},
   "license": "All-Rights-Reserved",
   "environment": "server",
@@ -19,6 +21,6 @@
     "fabric-permissions-api-v0": "*"
   },
   "mixins": [
-    "whitelistdb.mixins.json"
+    "whitelistdbfabric.mixins.json"
   ]
 }

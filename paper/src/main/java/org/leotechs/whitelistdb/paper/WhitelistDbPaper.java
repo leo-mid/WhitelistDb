@@ -10,6 +10,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
+import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.leotechs.whitelistdb.ConfigManager;
@@ -29,8 +30,8 @@ public class WhitelistDbPaper extends JavaPlugin implements Listener {
 
     @Override
     public void onEnable() {
-        File configDir = getDataFolder().getParentFile(); // "plugins" parent → root config
-        // Use the server root config folder for consistency with Fabric/Forge
+        File configDir = getDataFolder().getParentFile();
+
         File rootConfigDir = new File("config");
         if (!rootConfigDir.exists()) rootConfigDir.mkdirs();
 
@@ -125,7 +126,7 @@ public class WhitelistDbPaper extends JavaPlugin implements Listener {
     }
 
     private boolean handleBan(CommandSender sender, String name) {
-        // Check online first
+
         Player online = Bukkit.getPlayerExact(name);
         UUID uuid     = online != null ? online.getUniqueId() : PlayerCache.getUuid(name);
 

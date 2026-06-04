@@ -19,29 +19,29 @@ public class PlayerCache {
     private static final Map<String, UUID> NAME_TO_UUID = new HashMap<>();
     private static Path cacheFile;
 
-    /** Initialize with the config directory (e.g. Path.of("config")). */
+    
     public static void init(Path configDir) {
         cacheFile = configDir.resolve("whitelistdb/player_cache.json");
         load();
     }
 
-    /** Convenience overload – uses the default "config" folder. */
+    
     public static void init() {
         init(Paths.get("config"));
     }
 
-    /** Cache a username → UUID mapping (persists to disk). */
+    
     public static void cachePlayer(String username, UUID uuid) {
         NAME_TO_UUID.put(username.toLowerCase(Locale.ROOT), uuid);
         save();
     }
 
-    /** Look up a UUID by username (case-insensitive). Returns null if unknown. */
+    
     public static UUID getUuid(String username) {
         return NAME_TO_UUID.get(username.toLowerCase(Locale.ROOT));
     }
 
-    /** Generate a deterministic offline-mode UUID for a username. */
+    
     public static UUID offlineUuid(String username) {
         return UUID.nameUUIDFromBytes(("OfflinePlayer:" + username).getBytes(StandardCharsets.UTF_8));
     }

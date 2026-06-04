@@ -3,10 +3,13 @@ plugins {
     id 'java'
 }
 
-base { archivesName = "${project.archives_base_name}-neoforge" }
+base { archivesName = "${project.archives_base_name}-neoforge-${project.neoforge_version}" }
 
 neoForge {
-    version = project.neoforge_version
+    enable {
+        version = project.neoforge_version
+        disableRecompilation = true
+    }
 
     mods {
         whitelistdb {
@@ -16,8 +19,9 @@ neoForge {
 }
 
 dependencies {
-    implementation 'org.postgresql:postgresql:42.7.3'
-    implementation project(':common')
+    jarJar(implementation("org.postgresql:postgresql:42.7.3"))
+
+    jarJar(implementation project(':common'))
 }
 
 jar {
