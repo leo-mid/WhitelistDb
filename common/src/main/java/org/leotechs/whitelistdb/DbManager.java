@@ -20,6 +20,12 @@ public class DbManager {
         this.table = cfg.getTable();
         this.placeholder_column = cfg.getPlaceholderColumn();
         try {
+            Class.forName("org.postgresql.Driver");
+        } catch (ClassNotFoundException e) {
+            LOGGER.error("PostgreSQL JDBC driver not found in classpath", e);
+            return;
+        }
+        try {
             conn = DriverManager.getConnection(cfg.jdbcUrl(), cfg.getUsername(), cfg.getPassword());
             LOGGER.info("Connected to database successfully.");
         } catch (SQLException e) {
@@ -31,6 +37,12 @@ public class DbManager {
         ConfigManager.Config cfg = configManager.get();
         try {
             if (conn == null || conn.isClosed()) {
+                try {
+                    Class.forName("org.postgresql.Driver");
+                } catch (ClassNotFoundException e) {
+                    LOGGER.error("PostgreSQL JDBC driver not found", e);
+                    return null;
+                }
                 conn = DriverManager.getConnection(cfg.jdbcUrl(), cfg.getUsername(), cfg.getPassword());
             }
         } catch (SQLException e) {

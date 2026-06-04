@@ -10,27 +10,37 @@ repositories {
     mavenCentral()
 }
 
-base {
-    archivesName.set("${project.archives_base_name}-paper-${project.paper_version}")
-}
-
-configurations {
-    embed
-}
-
 dependencies {
     compileOnly("io.papermc.paper:paper-api:${project.paper_version}")
 
     implementation(project(":common"))
-    embed(project(":common"))
-
-    embed("org.postgresql:postgresql:42.7.3")
+    implementation("org.postgresql:postgresql:42.7.3")
 }
 
-processResources {
+base {
+    archivesName.set("${project.archives_base_name}-paper-${project.paper_version}")
+}
+
+tasks.processResources {
     inputs.property "version", project.version
 
     filesMatching("plugin.yml") {
         expand version: project.version
     }
+}
+
+tasks.jar {
+    dependsOn(":common:jar")
+
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    from {
+        configurations.runtimeClasspath.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
+
+    // removed: from(project(":common").sourceSets.main.output)
+
+    exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA")
 }
