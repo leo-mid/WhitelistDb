@@ -12,13 +12,13 @@ logoFile         = "whitelistdb-logo.png"
 [[dependencies.whitelistdb]]
 modId       = "neoforge"
 type        = "required"
-versionRange = "[26.1,)"
+versionRange = "[26.2,)"
 ordering    = "NONE"
 side        = "SERVER"
 
 [[dependencies.whitelistdb]]
 modId       = "minecraft"
 type        = "required"
-versionRange = "[26.1,)"
+versionRange = "[26.2,)"
 ordering    = "NONE"
 side        = "SERVER"

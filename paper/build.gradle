@@ -15,6 +15,7 @@ dependencies {
 
     implementation(project(":common"))
     implementation("org.postgresql:postgresql:42.7.3")
+    implementation("me.clip:placeholderapi:2.11.7")
 }
 
 base {
@@ -39,8 +40,6 @@ tasks.jar {
             it.isDirectory() ? it : zipTree(it)
         }
     }
-
-    // removed: from(project(":common").sourceSets.main.output)
 
     exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA")
 }

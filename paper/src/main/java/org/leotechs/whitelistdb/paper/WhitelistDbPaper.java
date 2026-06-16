@@ -10,7 +10,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
-import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.leotechs.whitelistdb.ConfigManager;
@@ -44,6 +43,11 @@ public class WhitelistDbPaper extends JavaPlugin implements Listener {
         Bukkit.getPluginManager().registerEvents(this, this);
 
         getLogger().info("[WhitelistDB] Paper plugin enabled. Whitelist = " + configManager.isEnabled());
+
+        if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
+            new PlaceholderApi(this).register();
+            getLogger().info("PlaceholderAPI detected - registered %whitelistdb_playerinfo%");
+        }
     }
 
     @Override
@@ -163,5 +167,9 @@ public class WhitelistDbPaper extends JavaPlugin implements Listener {
             sender.sendMessage(Component.text("Failed to unban player: " + name).color(NamedTextColor.RED));
         }
         return true;
+    }
+
+    public DbManager getDatabaseManager() {
+        return dbManager;
     }
 }

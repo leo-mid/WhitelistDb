@@ -47,7 +47,7 @@ The placeholder for this mod varries depending on the version.
 * 1.21.x - `%whitelistdb:school%`
 * 26.1.x - `%whitelistdb:playerinfo%`
 
-Please note that currently paper and neoforge **does not** support placeholders!
+Please note that currently neoforge **does not** support placeholders!
 
 ## Mod Information
 Current version: 1.6.0
