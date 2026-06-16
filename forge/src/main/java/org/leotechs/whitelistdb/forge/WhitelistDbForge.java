@@ -65,7 +65,6 @@ public class WhitelistDbForge {
             dbManager.close();
         }
     }
-
     
     private void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
@@ -78,7 +77,7 @@ public class WhitelistDbForge {
             return;
         }
 
-        if (!whitelistHandler.checkBanned(uuid)) {
+        if (whitelistHandler.checkBanned(uuid)) {
             player.connection.disconnect(
                     Component.literal(configManager.getBanReason()).withStyle(ChatFormatting.RED));
         }

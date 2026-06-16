@@ -32,6 +32,6 @@ public class WhitelistHandler {
 
     
     public boolean checkBanned(UUID uuid) {
-        return !db.isPlayerBanned(uuid);
+        return db.isPlayerBanned(uuid);
     }
 }

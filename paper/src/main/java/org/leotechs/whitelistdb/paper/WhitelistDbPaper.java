@@ -61,19 +61,17 @@ public class WhitelistDbPaper extends JavaPlugin implements Listener {
     @EventHandler(priority = EventPriority.HIGH)
     public void onAsyncPreLogin(AsyncPlayerPreLoginEvent event) {
         UUID uuid = event.getUniqueId();
+        if (whitelistHandler.checkBanned(uuid)) {
+            event.disallow(
+                    AsyncPlayerPreLoginEvent.Result.KICK_BANNED,
+                    Component.text(configManager.getBanReason()).color(NamedTextColor.RED)
+            );
+        }
 
         if (!whitelistHandler.allowPlayer(uuid)) {
             event.disallow(
                     AsyncPlayerPreLoginEvent.Result.KICK_WHITELIST,
                     Component.text(configManager.getMessage())
-            );
-            return;
-        }
-
-        if (!whitelistHandler.checkBanned(uuid)) {
-            event.disallow(
-                    AsyncPlayerPreLoginEvent.Result.KICK_BANNED,
-                    Component.text(configManager.getBanReason()).color(NamedTextColor.RED)
             );
         }
     }

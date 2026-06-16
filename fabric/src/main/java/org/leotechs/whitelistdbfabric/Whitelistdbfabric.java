@@ -53,6 +53,7 @@ public class Whitelistdbfabric implements ModInitializer {
         whitelistHandler = new WhitelistHandler(dbManager, configManager);
 
         registerCommands();
+        registerEvents();
         registerPlaceholders();
 
         LOGGER.info("[WhitelistDB] Loaded. Whitelist enabled = {}", configManager.isEnabled());
@@ -88,7 +89,7 @@ public class Whitelistdbfabric implements ModInitializer {
                 handler.disconnect(Component.literal(configManager.getMessage()));
                 return;
             }
-            if (!whitelistHandler.checkBanned(uuid)) {
+            if (whitelistHandler.checkBanned(uuid)) {
                 handler.disconnect(Component.literal(configManager.getBanReason())
                         .withStyle(ChatFormatting.RED));
             }
