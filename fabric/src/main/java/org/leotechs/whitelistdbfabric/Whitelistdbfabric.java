@@ -52,7 +52,6 @@ public class Whitelistdbfabric implements ModInitializer {
 
         whitelistHandler = new WhitelistHandler(dbManager, configManager);
 
-        registerEvents();
         registerCommands();
         registerPlaceholders();
 
@@ -98,6 +97,13 @@ public class Whitelistdbfabric implements ModInitializer {
         ServerLifecycleEvents.SERVER_STARTED.register(server ->
                 LOGGER.info("[WhitelistDB] Server started. Whitelist enabled = {}",
                         whitelistHandler.isWhitelistEnabled()));
+
+        // Close the JDBC connection cleanly when the server stops to prevent connection leaks
+        ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
+            if (dbManager != null) {
+                dbManager.close();
+            }
+        });
     }
 
     private void registerCommands() {

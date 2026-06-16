@@ -13,6 +13,7 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import org.leotechs.whitelistdb.ConfigManager;
@@ -47,6 +48,7 @@ public class WhitelistDbForge {
         PlayerCache.init(Path.of("config"));
 
         NeoForge.EVENT_BUS.addListener(this::onServerStarted);
+        NeoForge.EVENT_BUS.addListener(this::onServerStopping);
         NeoForge.EVENT_BUS.addListener(this::onPlayerLogin);
         NeoForge.EVENT_BUS.addListener(this::onRegisterCommands);
 
@@ -56,6 +58,12 @@ public class WhitelistDbForge {
     private void onServerStarted(ServerStartedEvent event) {
         LOGGER.info("[WhitelistDB] Server started. Whitelist enabled = {}",
                 whitelistHandler.isWhitelistEnabled());
+    }
+
+    private void onServerStopping(ServerStoppingEvent event) {
+        if (dbManager != null) {
+            dbManager.close();
+        }
     }
 
     

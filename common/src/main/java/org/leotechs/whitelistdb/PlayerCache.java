@@ -3,6 +3,8 @@ package org.leotechs.whitelistdb;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Reader;
 import java.io.Writer;
@@ -12,36 +14,33 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class PlayerCache {
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    private static final Map<String, UUID> NAME_TO_UUID = new HashMap<>();
+    private static final Logger LOGGER = LoggerFactory.getLogger("whitelistdb");
+    private static final Map<String, UUID> NAME_TO_UUID = new ConcurrentHashMap<>();
     private static Path cacheFile;
 
-    
     public static void init(Path configDir) {
         cacheFile = configDir.resolve("whitelistdb/player_cache.json");
         load();
     }
 
-    
     public static void init() {
         init(Paths.get("config"));
     }
 
-    
     public static void cachePlayer(String username, UUID uuid) {
         NAME_TO_UUID.put(username.toLowerCase(Locale.ROOT), uuid);
         save();
     }
 
-    
     public static UUID getUuid(String username) {
         return NAME_TO_UUID.get(username.toLowerCase(Locale.ROOT));
     }
 
-    
     public static UUID offlineUuid(String username) {
         return UUID.nameUUIDFromBytes(("OfflinePlayer:" + username).getBytes(StandardCharsets.UTF_8));
     }
@@ -53,7 +52,7 @@ public class PlayerCache {
             Map<String, String> raw = GSON.fromJson(reader, type);
             if (raw != null) raw.forEach((k, v) -> NAME_TO_UUID.put(k, UUID.fromString(v)));
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.error("Failed to load player cache", e);
         }
     }
 
@@ -66,7 +65,7 @@ public class PlayerCache {
                 GSON.toJson(raw, writer);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.error("Failed to save player cache", e);
         }
     }
 }

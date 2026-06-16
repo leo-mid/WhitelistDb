@@ -48,6 +48,9 @@ public class WhitelistDbPaper extends JavaPlugin implements Listener {
 
     @Override
     public void onDisable() {
+        if (dbManager != null) {
+            dbManager.close();
+        }
         getLogger().info("[WhitelistDB] Paper plugin disabled.");
     }
 
