@@ -108,40 +108,41 @@ public class Whitelistdbfabric implements ModInitializer {
     }
 
     private void registerCommands() {
+
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
-            dispatcher.register(
-                Commands.literal("whitelistdb")
-                    .then(Commands.literal("toggle")
-                        .requires(src -> Permissions.check(src, "whitelistdb.admin", 4))
-                        .executes(ctx -> {
-                            whitelistHandler.toggleWhitelist();
-                            boolean enabled = whitelistHandler.isWhitelistEnabled();
-                            ctx.getSource().sendSuccess(
-                                () -> Component.literal("Whitelist is now " + (enabled ? "ENABLED" : "DISABLED")),
-                        true
-                            );
-                            return 1;
-                        })
-                    )
-            )
+                dispatcher.register(
+                        Commands.literal("whitelistdb")
+                                .then(Commands.literal("toggle")
+                                        .requires(src -> Permissions.check(src, "whitelistdb.admin", 4))
+                                        .executes(ctx -> {
+                                            whitelistHandler.toggleWhitelist();
+                                            boolean enabled = whitelistHandler.isWhitelistEnabled();
+                                            ctx.getSource().sendSuccess(
+                                                    () -> Component.literal("Whitelist is now " + (enabled ? "ENABLED" : "DISABLED")),
+                                                    true
+                                            );
+                                            return 1;
+                                        })
+                                )
+                )
         );
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
-            dispatcher.register(
-                Commands.literal("wban")
-                    .requires(src -> Permissions.check(src, "whitelistdb.admin", 4))
-                    .then(Commands.argument("player", StringArgumentType.greedyString())
-                        .executes(this::banPlayer))
-            )
+                dispatcher.register(
+                        Commands.literal("wban")
+                                .requires(src -> Permissions.check(src, "whitelistdb.admin", 4))
+                                .then(Commands.argument("player", StringArgumentType.greedyString())
+                                        .executes(this::banPlayer))
+                )
         );
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
-            dispatcher.register(
-                Commands.literal("wunban")
-                    .requires(src -> Permissions.check(src, "whitelistdb.admin", 4))
-                    .then(Commands.argument("player", StringArgumentType.greedyString())
-                        .executes(this::unbanPlayer))
-            )
+                dispatcher.register(
+                        Commands.literal("wunban")
+                                .requires(src -> Permissions.check(src, "whitelistdb.admin", 4))
+                                .then(Commands.argument("player", StringArgumentType.greedyString())
+                                        .executes(this::unbanPlayer))
+                )
         );
     }
 

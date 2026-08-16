@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "whitelistdbfabric",
+  "version": "${version}",
+  "name": "WhitelistDbFabric",
+  "description": "A fabric mod that connects to a postgres database",
+  "authors": [
+    "Leo Midili"
+  ],
+  "contact": {},
+  "license": "All-Rights-Reserved",
+  "environment": "server",
+  "entrypoints": {
+    "main": [
+      "org.leotechs.whitelistdbfabric.Whitelistdbfabric"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "minecraft": "${minecraft_version}",
+    "fabric-permissions-api-v0": "*"
+  },
+  "mixins": [
+    "whitelistdbfabric.mixins.json"
+  ]
+}
