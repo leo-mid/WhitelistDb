@@ -4,6 +4,7 @@ plugins {
 }
 
 val minecraftVersions = listOf(
+    "26.3",
     "26.2",
     "26.1.2",
     "26.1.1",
@@ -17,6 +18,7 @@ base {
 }
 
 val fabricApiVersions = mapOf(
+    "26.3" to "0.160.5+26.3",
     "26.2" to "0.154.2+26.2",
     "26.1.2" to "0.154.2+26.1.2",
     "26.1.1" to "0.145.4+26.1.1",
@@ -24,6 +26,7 @@ val fabricApiVersions = mapOf(
 )
 
 val permissionApiVersions = mapOf(
+    "26.3" to "0.7.0",
     "26.2" to "0.7.0",
     "26.1.2" to "0.7.0",
     "26.1.1" to "0.7.0",
@@ -31,6 +34,7 @@ val permissionApiVersions = mapOf(
 )
 
 val placeholderApiVersions = mapOf(
+    "26.3" to "3.0.0+26.1",
     "26.2" to "3.0.0+26.1",
     "26.1.2" to "3.0.0+26.1",
     "26.1.1" to "3.0.0+26.1",
