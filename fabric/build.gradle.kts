@@ -11,7 +11,10 @@ val minecraftVersions = listOf(
     "26.1"
 )
 
-val minecraftVersion = providers.gradleProperty("minecraftVersion").orElse("26.2").get()
+// 1.x values of -PminecraftVersion are meant for :fabric-1.21, so they're ignored here.
+val minecraftVersion = providers.gradleProperty("minecraftVersion").orNull
+    ?.takeUnless { it.startsWith("1.") }
+    ?: "26.2"
 
 base {
     archivesName.set("${project.property("archives_base_name")}-fabric-$minecraftVersion")
@@ -87,7 +90,7 @@ tasks.register("buildAllVersions") {
 
             val process = ProcessBuilder(
                 "./gradlew",
-                "build",
+                ":fabric:build",
                 "-PminecraftVersion=$version"
             )
                 .inheritIO()

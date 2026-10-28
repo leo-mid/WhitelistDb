@@ -3,7 +3,7 @@ package org.leotechs.whitelistdbfabric;
 import com.mojang.authlib.GameProfile;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
-import eu.pb4.placeholders.api.Placeholders;
+import eu.pb4.placeholders.api.PlaceholderHandler;
 import eu.pb4.placeholders.api.PlaceholderResult;
 import me.lucko.fabric.api.permissions.v0.Permissions;
 import net.fabricmc.api.ModInitializer;
@@ -15,7 +15,6 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.players.PlayerList;
@@ -23,6 +22,8 @@ import org.leotechs.whitelistdb.ConfigManager;
 import org.leotechs.whitelistdb.DbManager;
 import org.leotechs.whitelistdb.PlayerCache;
 import org.leotechs.whitelistdb.WhitelistHandler;
+import org.leotechs.whitelistdbfabric.compat.PlaceholderCompat;
+import org.leotechs.whitelistdbfabric.compat.ProfileCompat;
 import org.leotechs.whitelistdbfabric.mixin.ServerLoginNetworkHandlerAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,22 +61,24 @@ public class Whitelistdbfabric implements ModInitializer {
     }
 
     private void registerPlaceholders() {
-        Placeholders.registerCommon(
-                Identifier.fromNamespaceAndPath(MODID, "playerinfo"),
-                (ctx, arg) -> {
-                    if (ctx.player() == null) return PlaceholderResult.invalid("No player context");
-                    UUID uuid  = ctx.player().getUUID();
-                    String val = dbManager.getPlayerPlaceholder(uuid);
-                    return val != null ? PlaceholderResult.value(val) : PlaceholderResult.value("");
-                }
-        );
+        PlaceholderHandler handler = (ctx, arg) -> {
+            if (ctx.player() == null) return PlaceholderResult.invalid("No player context");
+            UUID uuid  = ctx.player().getUUID();
+            String val = dbManager.getPlayerPlaceholder(uuid);
+            return val != null ? PlaceholderResult.value(val) : PlaceholderResult.value("");
+        };
+
+        // Same name as the 26.x builds
+        PlaceholderCompat.register(MODID, "playerinfo", handler);
+        // Old 1.21.x name, kept so existing configs using %whitelistdb:school% keep working
+        PlaceholderCompat.register(MODID, "school", handler);
     }
 
     private void registerEvents() {
 
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
                 PlayerCache.cachePlayer(
-                        handler.getPlayer().getGameProfile().name(),
+                        ProfileCompat.name(handler.getPlayer().getGameProfile()),
                         handler.getPlayer().getUUID()
                 )
         );
@@ -83,7 +86,7 @@ public class Whitelistdbfabric implements ModInitializer {
         ServerLoginConnectionEvents.QUERY_START.register((handler, server, sender, synchronizer) -> {
             GameProfile profile = ((ServerLoginNetworkHandlerAccessor) handler).getProfile();
             if (profile == null) return;
-            UUID uuid = profile.id();
+            UUID uuid = ProfileCompat.id(profile);
 
             if (!whitelistHandler.allowPlayer(uuid)) {
                 handler.disconnect(Component.literal(configManager.getMessage()));
@@ -108,41 +111,40 @@ public class Whitelistdbfabric implements ModInitializer {
     }
 
     private void registerCommands() {
-
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
-                dispatcher.register(
-                        Commands.literal("whitelistdb")
-                                .then(Commands.literal("toggle")
-                                        .requires(src -> Permissions.check(src, "whitelistdb.admin", 4))
-                                        .executes(ctx -> {
-                                            whitelistHandler.toggleWhitelist();
-                                            boolean enabled = whitelistHandler.isWhitelistEnabled();
-                                            ctx.getSource().sendSuccess(
-                                                    () -> Component.literal("Whitelist is now " + (enabled ? "ENABLED" : "DISABLED")),
-                                                    true
-                                            );
-                                            return 1;
-                                        })
-                                )
-                )
+            dispatcher.register(
+                Commands.literal("whitelistdb")
+                    .then(Commands.literal("toggle")
+                        .requires(src -> Permissions.check(src, "whitelistdb.admin", 4))
+                        .executes(ctx -> {
+                            whitelistHandler.toggleWhitelist();
+                            boolean enabled = whitelistHandler.isWhitelistEnabled();
+                            ctx.getSource().sendSuccess(
+                                () -> Component.literal("Whitelist is now " + (enabled ? "ENABLED" : "DISABLED")),
+                        true
+                            );
+                            return 1;
+                        })
+                    )
+            )
         );
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
-                dispatcher.register(
-                        Commands.literal("wban")
-                                .requires(src -> Permissions.check(src, "whitelistdb.admin", 4))
-                                .then(Commands.argument("player", StringArgumentType.greedyString())
-                                        .executes(this::banPlayer))
-                )
+            dispatcher.register(
+                Commands.literal("wban")
+                    .requires(src -> Permissions.check(src, "whitelistdb.admin", 4))
+                    .then(Commands.argument("player", StringArgumentType.greedyString())
+                        .executes(this::banPlayer))
+            )
         );
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
-                dispatcher.register(
-                        Commands.literal("wunban")
-                                .requires(src -> Permissions.check(src, "whitelistdb.admin", 4))
-                                .then(Commands.argument("player", StringArgumentType.greedyString())
-                                        .executes(this::unbanPlayer))
-                )
+            dispatcher.register(
+                Commands.literal("wunban")
+                    .requires(src -> Permissions.check(src, "whitelistdb.admin", 4))
+                    .then(Commands.argument("player", StringArgumentType.greedyString())
+                        .executes(this::unbanPlayer))
+            )
         );
     }
 

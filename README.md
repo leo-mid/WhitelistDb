@@ -43,16 +43,30 @@ Default layout of `config/whitelistdb-config.json`
 }
 ```
 
-The placeholder for this mod varries depending on the version.
-* 1.21.x - `%whitelistdb:school%`
-* 26.1.x - `%whitelistdb:playerinfo%`
+The placeholder for this mod is `%whitelistdb:playerinfo%`.
+* On 1.21.x the old `%whitelistdb:school%` placeholder also still works.
 
 Please note that currently neoforge **does not** support placeholders!
 
+## Building
+Fabric is split into two modules: `fabric` (26.x, Java 25) and `fabric-1.21` (1.21 - 1.21.11, Java 21).
+Both use the same `-PminecraftVersion` property, and each module only reacts to versions it supports.
+
+```
+# One version
+./gradlew :fabric:build -PminecraftVersion=26.3
+./gradlew :fabric-1.21:build -PminecraftVersion=1.21.5
+
+# Every version
+./gradlew :fabric:buildAllVersions
+./gradlew :fabric-1.21:buildAllVersions
+```
+Jars end up in `fabric/build/libs` and `fabric-1.21/build/libs`.
+
 ## Mod Information
-Current version: 1.6.0
+Current version: 1.7.0
 
-Currently Supported: 26.1.x
-
-No longer Supported: 1.21.x
+Currently Supported:
+* Fabric: 1.21 - 1.21.11, 26.1 - 26.3
+* NeoForge / Paper: 26.x
 

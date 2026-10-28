@@ -1,6 +1,7 @@
 plugins {
     java
     id("net.fabricmc.fabric-loom") version "1.17-SNAPSHOT" apply false
+    id("net.fabricmc.fabric-loom-remap") version "1.17-SNAPSHOT" apply false
     id("net.neoforged.moddev") version "2.0.140" apply false
 }
 
@@ -17,30 +18,21 @@ allprojects {
 }
 
 subprojects {
+    // Minecraft 26.x runs on Java 25, Minecraft 1.21.x runs on Java 21.
+    // :common is bundled into both, so it targets Java 21 bytecode (which also runs fine on Java 25).
+    val toolchainVersion = if (name == "fabric-1.21") 21 else 25
+    val releaseVersion = if (name == "fabric-1.21" || name == "common") 21 else 25
+
     plugins.withId("java") {
         extensions.configure<JavaPluginExtension> {
             toolchain {
-                languageVersion.set(JavaLanguageVersion.of(25))
+                languageVersion.set(JavaLanguageVersion.of(toolchainVersion))
             }
         }
 
         tasks.withType<JavaCompile>().configureEach {
             options.encoding = "UTF-8"
-            options.release.set(25)
+            options.release.set(releaseVersion)
         }
     }
 }
-
-//project(":fabric-1.21") {
-//    plugins.withId("java") {
-//        extensions.configure<JavaPluginExtension> {
-//            toolchain {
-//                languageVersion.set(JavaLanguageVersion.of(21))
-//            }
-//        }
-//
-//        tasks.withType<JavaCompile>().configureEach {
-//            options.release.set(21)
-//        }
-//    }
-//}

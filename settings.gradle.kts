@@ -16,10 +16,10 @@ pluginManagement {
 
 rootProject.name = "WhitelistDbFabric"
 
-// Fabric 1.21 Support is still work in progress
 include(
         "common",
         "fabric",
+        "fabric-1.21",
         "forge",
         "paper"
 )
