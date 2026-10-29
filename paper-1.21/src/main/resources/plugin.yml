@@ -14,7 +14,7 @@ commands:
     permission: whitelistdb.admin
   wban:
     description: Ban a player in the database across all servers.
-    usage: /wban <player>
+    usage: /wban <player> [reason]
     permission: whitelistdb.admin
   wunban:
     description: Unban a player in the database across all servers.

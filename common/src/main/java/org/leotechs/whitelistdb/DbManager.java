@@ -17,25 +17,28 @@ public class DbManager implements AutoCloseable {
     public static final Logger LOGGER = LoggerFactory.getLogger("whitelistdb");
     private final String table;
     private final String placeholderColumn;
+    private final String banColumn;
+    private final boolean banReasonsEnabled;
+    private final String banReasonColumn;
+
+    /** Whether a player is banned and, if ban reasons are enabled, why. */
+    public record BanStatus(boolean banned, String reason) {
+        public static final BanStatus NOT_BANNED = new BanStatus(false, null);
+    }
 
     public DbManager(ConfigManager configManager) {
         DbManager.configManager = configManager;
         ConfigManager.Config cfg = configManager.get();
 
-        String t  = cfg.getTable();
-        String pc = cfg.getPlaceholderColumn();
-        if (!SAFE_IDENTIFIER.matcher(t).matches()) {
-            throw new IllegalArgumentException("Unsafe table name in config: " + t);
-        }
-        if (!SAFE_IDENTIFIER.matcher(pc).matches()) {
-            throw new IllegalArgumentException("Unsafe placeholder_column name in config: " + pc);
-        }
-        if (!SAFE_IDENTIFIER.matcher(cfg.getBanReasonColumn()).matches()) {
-            throw new IllegalArgumentException("Unsafe ban_reason_column name in config: " + cfg.getBanReasonColumn());
-        }
-
-        this.table             = t;
-        this.placeholderColumn = pc;
+        // Table and column names can't be passed as SQL parameters, so they're validated here and
+        // then embedded in the queries below.
+        this.table             = requireSafeIdentifier("table", cfg.getTable());
+        this.placeholderColumn = requireSafeIdentifier("placeholder_column", cfg.getPlaceholderColumn());
+        this.banColumn         = requireSafeIdentifier("ban_column", cfg.getBanColumn());
+        this.banReasonsEnabled = cfg.isBanReasonsEnabled();
+        this.banReasonColumn   = banReasonsEnabled
+                ? requireSafeIdentifier("ban_reason_column", cfg.getBanReasonColumn())
+                : null;
 
         try {
             Class.forName("org.postgresql.Driver");
@@ -49,6 +52,13 @@ public class DbManager implements AutoCloseable {
         } catch (SQLException e) {
             LOGGER.error("Failed to connect to database", e);
         }
+    }
+
+    private static String requireSafeIdentifier(String setting, String value) {
+        if (value == null || !SAFE_IDENTIFIER.matcher(value).matches()) {
+            throw new IllegalArgumentException("Unsafe " + setting + " name in config: " + value);
+        }
+        return value;
     }
 
     private synchronized Connection getConnection() {
@@ -102,10 +112,14 @@ public class DbManager implements AutoCloseable {
         return false;
     }
 
+    /**
+     * Marks the player as banned. When ban reasons are enabled the reason column is set too
+     * (cleared if {@code reason} is null); when they're disabled the reason is ignored.
+     */
     public boolean banPlayer(UUID uuid, String reason) {
         Connection c = getConnection();
         if (c == null) return false;
-        if(configManager.isEnableBanReasonLogs()){
+        if(configManager.isBanReasonsEnabled()){
             try (PreparedStatement st = c.prepareStatement(
                     "UPDATE " + table + " SET banned = true, " + configManager.getBanReasonColumn() + " = ? WHERE uuid = CAST(? AS uuid)")) {
                 st.setString(1, reason);
@@ -128,11 +142,14 @@ public class DbManager implements AutoCloseable {
         return false;
     }
 
+    /** Unbans the player and, when ban reasons are enabled, clears the stored reason. */
     public boolean unbanPlayer(UUID uuid) {
         Connection c = getConnection();
         if (c == null) return false;
-        try (PreparedStatement st = c.prepareStatement(
-                "UPDATE " + table + " SET banned = false WHERE uuid = CAST(? AS uuid)")) {
+        String sql = banReasonsEnabled
+                ? "UPDATE " + table + " SET " + banColumn + " = false, " + banReasonColumn + " = NULL WHERE uuid = CAST(? AS uuid)"
+                : "UPDATE " + table + " SET " + banColumn + " = false WHERE uuid = CAST(? AS uuid)";
+        try (PreparedStatement st = c.prepareStatement(sql)) {
             st.setString(1, uuid.toString());
             st.executeUpdate();
             return true;

@@ -12,7 +12,7 @@ import java.nio.charset.StandardCharsets;
 
 public class ConfigManager {
 
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     private static final Logger LOGGER = LoggerFactory.getLogger("whitelistdb");
 
     public static class Config {
@@ -22,13 +22,15 @@ public class ConfigManager {
         private String username = "postgres";
         private String password = "password";
         private String table = "server_whitelists";
-        private String placeholder_column = "tag";
+        private String placeholderColumn = "tag";
+        private String banColumn = "banned";
+        private boolean banReasonsEnabled = false;
+        private String banReasonColumn = "ban_reason";
         private boolean ssl = false;
         private String message = "You are not whitelisted!";
         private boolean enabled = true;
         private String banReason = "You have been banned!";
-        private boolean enableBanReasonLogs = true;
-        private String banReasonColumn = "ban_reason";
+        private String banMessageWithReason = "You have been banned!\nReason: %reason%";
 
         public String jdbcUrl() {
             return "jdbc:postgresql://" + host + ":" + port + "/" + database
@@ -38,12 +40,14 @@ public class ConfigManager {
         public String getUsername()          { return username; }
         public String getPassword()          { return password; }
         public String getTable()             { return table; }
-        public String getPlaceholderColumn() { return placeholder_column; }
+        public String getPlaceholderColumn() { return placeholderColumn; }
         public String getMessage()           { return message; }
         public boolean isEnabled()           { return enabled; }
         public String getBanReason()         { return banReason; }
-        public boolean isEnableBanReasonLogs(){ return enableBanReasonLogs; }
+        public String getBanColumn()         { return banColumn; }
+        public boolean isBanReasonsEnabled() { return banReasonsEnabled; }
         public String getBanReasonColumn()   { return banReasonColumn; }
+        public String getBanMessageWithReason() { return banMessageWithReason; }
     }
 
     private final File configFile;
@@ -66,6 +70,9 @@ public class ConfigManager {
             try (FileReader reader = new FileReader(configFile, StandardCharsets.UTF_8)) {
                 config = GSON.fromJson(reader, Config.class);
             }
+            if (config == null) config = new Config();
+            // Write the file back so settings added in newer versions show up in older config files
+            save();
         } catch (Exception e) {
             LOGGER.error("Failed to load config, using defaults", e);
             config = new Config();
@@ -83,8 +90,8 @@ public class ConfigManager {
     public String getMessage()    { return config.getMessage(); }
     public boolean isEnabled()    { return config.isEnabled(); }
     public String getBanReason()  { return config.getBanReason(); }
-
-    public boolean isEnableBanReasonLogs() { return config.isEnableBanReasonLogs(); }
+    public boolean isBanReasonsEnabled() { return config.isBanReasonsEnabled(); }
+    public String getBanMessageWithReason() { return config.getBanMessageWithReason(); }
     public String getBanReasonColumn() { return config.getBanReasonColumn(); }
 
     public void setWhitelistEnabled(boolean enabled) {

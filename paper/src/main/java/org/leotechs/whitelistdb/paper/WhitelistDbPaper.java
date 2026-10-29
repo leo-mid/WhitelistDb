@@ -19,6 +19,7 @@ import org.leotechs.whitelistdb.WhitelistHandler;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.UUID;
 
 public class WhitelistDbPaper extends JavaPlugin implements Listener {
@@ -107,11 +108,13 @@ public class WhitelistDbPaper extends JavaPlugin implements Listener {
                     return true;
                 }
                 if (args.length < 1) {
-                    sender.sendMessage(Component.text("Usage: /wban <player>"));
+                    sender.sendMessage(Component.text("Usage: /wban <player> [reason]"));
                     return true;
                 }
-                String targetName = String.join(" ", args);
-                String reason = args[args.length - 1];
+                String targetName = args[0];
+                String reason = args.length > 1
+                        ? String.join(" ", Arrays.copyOfRange(args, 1, args.length))
+                        : null;
                 return handleBan(sender, targetName, reason);
             }
 

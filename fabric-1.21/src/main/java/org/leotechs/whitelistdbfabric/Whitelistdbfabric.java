@@ -133,10 +133,10 @@ public class Whitelistdbfabric implements ModInitializer {
             dispatcher.register(
                 Commands.literal("wban")
                     .requires(src -> Permissions.check(src, "whitelistdb.admin", 4))
-                    .then(Commands.argument("player", StringArgumentType.greedyString())
-                            .then(Commands.argument("reason", StringArgumentType.greedyString())
-                        .executes(this::banPlayer))
-                    )
+                    .then(Commands.argument("player", StringArgumentType.string())
+                        .executes(ctx -> banPlayer(ctx, null))
+                        .then(Commands.argument("reason", StringArgumentType.greedyString())
+                            .executes(ctx -> banPlayer(ctx, StringArgumentType.getString(ctx, "reason")))))
             )
         );
 
@@ -150,10 +150,9 @@ public class Whitelistdbfabric implements ModInitializer {
         );
     }
 
-    private int banPlayer(CommandContext<CommandSourceStack> ctx) {
+    private int banPlayer(CommandContext<CommandSourceStack> ctx, String reason) {
         CommandSourceStack source = ctx.getSource();
         String name = StringArgumentType.getString(ctx, "player");
-        String reason = StringArgumentType.getString(ctx, "reason");
 
         MinecraftServer server   = source.getServer();
         PlayerList playerList    = server.getPlayerList();

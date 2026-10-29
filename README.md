@@ -7,18 +7,22 @@ For example, having people in a school Minecraft server, and in order for them t
 ## Commands
 * /whitelistdb toggle
   * Turns the whitelist on and off
-* /wban
+* /wban <player> [reason]
   * Updates the database record to show they are banned across **all servers!**
   * Will kick the player if they are online - does work on players who aren't online
-* /wunban
+  * The reason is optional and is only saved when `ban_reasons_enabled` is `true` (see below)
+  * Names with spaces can be put in quotes: `/wban "Some Name" griefing`
+* /wunban <player>
   * Updates the database record to show they are unbanned across **all servers!**
+  * Also clears the saved ban reason when ban reasons are enabled
 
 ## Getting Started
 To use this mod correctly, the table needs to at least have this information in it.
 ```
 uuid : UUID
-banned : Boolean
+banned : Boolean (can be called something else - set ban_column in the config)
 tag : String (Optional - for placeholder api, can be called something other than tag)
+ban_reason : String (Optional - only needed if ban_reasons_enabled is true, name set with ban_reason_column)
 ```
 
 This mod also caches usernames and UUIDs locally to ban/unban offline players much more easily.
@@ -32,16 +36,29 @@ Default layout of `config/whitelistdb-config.json`
   "host": "localhost",
   "port": 5432,
   "database": "minecraft",
-  "table": "server_whitelists",
-  "placeholder_column": "tag",
   "username": "postgres",
   "password": "password",
+  "table": "server_whitelists",
+  "placeholder_column": "tag",
+  "ban_column": "banned",
+  "ban_reasons_enabled": false,
+  "ban_reason_column": "ban_reason",
   "ssl": false,
   "message": "You are not whitelisted!",
   "enabled": true,
-  "banReason": "You have been banned!"
+  "banReason": "You have been banned!",
+  "banMessageWithReason": "You have been banned!\nReason: %reason%"
 }
 ```
+If you're updating from an older version, the new settings are added to your existing config file automatically the next time the server starts.
+
+### Ban reasons
+* `ban_column` - the name of the true/false column that marks a player as banned.
+* `ban_reasons_enabled` - set to `true` to save a reason with each ban and show it when the player is kicked. Off by default.
+* `ban_reason_column` - the text column the reason is saved in. Add it to your table before turning reasons on, e.g.
+  `ALTER TABLE server_whitelists ADD COLUMN ban_reason text;`
+* `banMessageWithReason` - the kick message used when a ban has a reason. `%reason%` is replaced with the reason and `\n` starts a new line.
+  Bans without a reason (or with reasons turned off) use `banReason` instead.
 
 The placeholder for this mod is `%whitelistdb:playerinfo%`.
 * On 1.21.x the old `%whitelistdb:school%` placeholder also still works.
@@ -79,7 +96,7 @@ Jars end up in each module's `build/libs` folder.
 Current version: 1.7.0
 
 Currently Supported:
-* Fabric: 1.21 - 26.3
-* NeoForge: 1.21 - 26.3
-* Paper: 1.21 - 1.21.1, 1.21.3 - 26.3
+* Fabric: 1.21 - 1.21.11, 26.1 - 26.3
+* NeoForge: 1.21 - 1.21.11, 26.1 - 26.3
+* Paper: 1.21 - 1.21.11, 26.1.1 - 26.3 (Paper never released 1.21.2 or 26.1)
 

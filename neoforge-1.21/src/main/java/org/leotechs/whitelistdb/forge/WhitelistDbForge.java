@@ -105,10 +105,10 @@ public class WhitelistDbForge {
 
         dispatcher.register(
                 PermissionCompat.requireGamemaster(Commands.literal("wban"))
-                        .then(Commands.argument("player", StringArgumentType.greedyString())
+                        .then(Commands.argument("player", StringArgumentType.string())
+                                .executes(ctx -> banPlayer(ctx, null))
                                 .then(Commands.argument("reason", StringArgumentType.greedyString())
-                                        .executes(this::banPlayer))
-                        )
+                                    .executes(ctx -> banPlayer(ctx, StringArgumentType.getString(ctx, "reason")))))
         );
 
         dispatcher.register(
@@ -118,10 +118,9 @@ public class WhitelistDbForge {
         );
     }
 
-    private int banPlayer(CommandContext<CommandSourceStack> ctx) {
+    private int banPlayer(CommandContext<CommandSourceStack> ctx, String reason) {
         CommandSourceStack source = ctx.getSource();
         String name = StringArgumentType.getString(ctx, "player");
-        String reason = StringArgumentType.getString(ctx, "reason");
 
         MinecraftServer server = source.getServer();
         PlayerList playerList  = server.getPlayerList();
