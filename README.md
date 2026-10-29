@@ -93,7 +93,7 @@ Every module uses the same `-PminecraftVersion` property and only reacts to vers
 Jars end up in each module's `build/libs` folder.
 
 ## Mod Information
-Current version: 1.7.0
+Current version: 1.8.0
 
 Currently Supported:
 * Fabric: 1.21 - 1.21.11, 26.1 - 26.3
