@@ -30,6 +30,10 @@ public class DbManager implements AutoCloseable {
         if (!SAFE_IDENTIFIER.matcher(pc).matches()) {
             throw new IllegalArgumentException("Unsafe placeholder_column name in config: " + pc);
         }
+        if (!SAFE_IDENTIFIER.matcher(cfg.getBanReasonColumn()).matches()) {
+            throw new IllegalArgumentException("Unsafe ban_reason_column name in config: " + cfg.getBanReasonColumn());
+        }
+
         this.table             = t;
         this.placeholderColumn = pc;
 
@@ -98,16 +102,28 @@ public class DbManager implements AutoCloseable {
         return false;
     }
 
-    public boolean banPlayer(UUID uuid) {
+    public boolean banPlayer(UUID uuid, String reason) {
         Connection c = getConnection();
         if (c == null) return false;
-        try (PreparedStatement st = c.prepareStatement(
-                "UPDATE " + table + " SET banned = true WHERE uuid = CAST(? AS uuid)")) {
-            st.setString(1, uuid.toString());
-            st.executeUpdate();
-            return true;
-        } catch (SQLException e) {
-            LOGGER.error("Failed to ban player {}", uuid, e);
+        if(configManager.isEnableBanReasonLogs()){
+            try (PreparedStatement st = c.prepareStatement(
+                    "UPDATE " + table + " SET banned = true, " + configManager.getBanReasonColumn() + " = ? WHERE uuid = CAST(? AS uuid)")) {
+                st.setString(1, reason);
+                st.setString(2, uuid.toString());
+                st.executeUpdate();
+                return true;
+            } catch (SQLException e) {
+                LOGGER.error("Failed to ban player {}", uuid, e);
+            }
+        } else{
+            try (PreparedStatement st = c.prepareStatement(
+                    "UPDATE " + table + " SET banned = true WHERE uuid = CAST(? AS uuid)")) {
+                st.setString(1, uuid.toString());
+                st.executeUpdate();
+                return true;
+            } catch (SQLException e) {
+                LOGGER.error("Failed to ban player {}", uuid, e);
+            }
         }
         return false;
     }

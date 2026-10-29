@@ -111,7 +111,8 @@ public class WhitelistDbPaper extends JavaPlugin implements Listener {
                     return true;
                 }
                 String targetName = String.join(" ", args);
-                return handleBan(sender, targetName);
+                String reason = args[args.length - 1];
+                return handleBan(sender, targetName, reason);
             }
 
             case "wunban" -> {
@@ -130,7 +131,7 @@ public class WhitelistDbPaper extends JavaPlugin implements Listener {
         return false;
     }
 
-    private boolean handleBan(CommandSender sender, String name) {
+    private boolean handleBan(CommandSender sender, String name, String reason) {
 
         Player online = Bukkit.getPlayerExact(name);
         UUID uuid     = online != null ? online.getUniqueId() : PlayerCache.getUuid(name);
@@ -140,7 +141,7 @@ public class WhitelistDbPaper extends JavaPlugin implements Listener {
             return true;
         }
 
-        if (dbManager.banPlayer(uuid)) {
+        if (dbManager.banPlayer(uuid, reason)) {
             if (online != null) {
                 online.kick(Component.text(configManager.getBanReason()).color(NamedTextColor.RED));
             }

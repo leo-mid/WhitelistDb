@@ -27,6 +27,8 @@ public class ConfigManager {
         private String message = "You are not whitelisted!";
         private boolean enabled = true;
         private String banReason = "You have been banned!";
+        private boolean enableBanReasonLogs = true;
+        private String banReasonColumn = "ban_reason";
 
         public String jdbcUrl() {
             return "jdbc:postgresql://" + host + ":" + port + "/" + database
@@ -40,6 +42,8 @@ public class ConfigManager {
         public String getMessage()           { return message; }
         public boolean isEnabled()           { return enabled; }
         public String getBanReason()         { return banReason; }
+        public boolean isEnableBanReasonLogs(){ return enableBanReasonLogs; }
+        public String getBanReasonColumn()   { return banReasonColumn; }
     }
 
     private final File configFile;
@@ -79,6 +83,9 @@ public class ConfigManager {
     public String getMessage()    { return config.getMessage(); }
     public boolean isEnabled()    { return config.isEnabled(); }
     public String getBanReason()  { return config.getBanReason(); }
+
+    public boolean isEnableBanReasonLogs() { return config.isEnableBanReasonLogs(); }
+    public String getBanReasonColumn() { return config.getBanReasonColumn(); }
 
     public void setWhitelistEnabled(boolean enabled) {
         config.enabled = enabled;
