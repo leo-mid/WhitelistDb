@@ -49,23 +49,25 @@ The placeholder for this mod is `%whitelistdb:playerinfo%`.
 Please note that currently neoforge **does not** support placeholders!
 
 ## Building
-Fabric and NeoForge are each split into two modules:
-* `fabric` / `forge` - 26.x, Java 25
-* `fabric-1.21` / `neoforge-1.21` - 1.21 - 1.21.11, Java 21
+Each platform is split into two modules:
+* `fabric` / `neoforge` / `paper` - 26.x, Java 25
+* `fabric-1.21` / `neoforge-1.21` / `paper-1.21` - 1.21 - 1.21.11, Java 21
 
 The Fabric and 1.21 modules use the same `-PminecraftVersion` property, and each module only reacts to versions it supports.
-The 26.x NeoForge module (`forge`) uses `neoforge_version` from `gradle.properties` instead.
+The 26.x NeoForge and Paper modules (`neoforge`, `paper`) use `neoforge_version` / `paper_version` from `gradle.properties` instead.
 
 ```
 # One version
 ./gradlew :fabric:build -PminecraftVersion=26.3
 ./gradlew :fabric-1.21:build -PminecraftVersion=1.21.5
 ./gradlew :neoforge-1.21:build -PminecraftVersion=1.21.5
+./gradlew :paper-1.21:build -PminecraftVersion=1.21.5
 
 # Every version
 ./gradlew :fabric:buildAllVersions
 ./gradlew :fabric-1.21:buildAllVersions
 ./gradlew :neoforge-1.21:buildAllVersions
+./gradlew :paper-1.21:buildAllVersions
 ```
 Jars end up in each module's `build/libs` folder.
 
@@ -75,5 +77,5 @@ Current version: 1.7.0
 Currently Supported:
 * Fabric: 1.21 - 26.3
 * NeoForge: 1.21 - 26.3
-* Paper: 26.x
+* Paper: 1.21 - 1.21.1, 1.21.3 - 26.3
 

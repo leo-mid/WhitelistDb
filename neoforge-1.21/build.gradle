@@ -22,7 +22,7 @@ def requested = providers.gradleProperty("minecraftVersion").orNull
 def minecraftVersion = "1.21.11"
 if (requested != null && requested.startsWith("1.")) {
     if (!minecraftVersions.contains(requested)) {
-        throw new GradleException("Unsupported Minecraft version '$requested' for :forge-1.21. Supported: $minecraftVersions")
+        throw new GradleException("Unsupported Minecraft version '$requested' for :neoforge-1.21. Supported: $minecraftVersions")
     }
     minecraftVersion = requested
 }
@@ -50,15 +50,13 @@ def patch = minecraftVersion.tokenize('.').size() > 2 ? minecraftVersion.tokeniz
 
 base { archivesName = "${project.archives_base_name}-neoforge-${minecraftVersion}" }
 
-// ---------------------------------------------------------------------------------------------
 // Version-specific source folders (src/compat/<name>/java). Only the ones matching the
 // selected Minecraft version are compiled, so the main code can stay identical for every 1.21.x.
 //
-//   profile_legacy    1.21   - 1.21.8   GameProfile is a class:  getName()
-//   profile_record    1.21.9 - 1.21.11  GameProfile is a record: name()
-//   permission_level  1.21   - 1.21.10  source.hasPermission(int)
-//   permission_check  1.21.11           Commands.hasPermission(PermissionCheck)
-// ---------------------------------------------------------------------------------------------
+//   profile_legacy 1.21 - 1.21.8 GameProfile is a class:  getName()
+//   profile_record 1.21.9 - 1.21.11 GameProfile is a record: name()
+//   permission_level 1.21 - 1.21.10 source.hasPermission(int)
+//   permission_check 1.21.11 Commands.hasPermission(PermissionCheck)
 def compatDirs = [
         patch >= 9 ? "profile_record" : "profile_legacy",
         patch >= 11 ? "permission_check" : "permission_level"

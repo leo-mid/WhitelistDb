@@ -104,7 +104,7 @@ $RECYCLE.BIN/
 .gradle
 build/
 fabric/.gradle
-forge/.gradle
+neoforge/.gradle
 paper/.gradle
 
 # Ignore Gradle GUI config

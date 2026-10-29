@@ -1,0 +1,121 @@
+plugins {
+    id 'java'
+}
+
+repositories {
+    maven {
+        name = "papermc"
+        url = uri("https://repo.papermc.io/repository/maven-public/")
+    }
+    mavenCentral()
+}
+
+// Paper never released a 1.21.2 build (it went straight from 1.21.1 to 1.21.3).
+def minecraftVersions = [
+        "1.21.11",
+        "1.21.10",
+        "1.21.9",
+        "1.21.8",
+        "1.21.7",
+        "1.21.6",
+        "1.21.5",
+        "1.21.4",
+        "1.21.3",
+        "1.21.1",
+        "1.21"
+]
+
+// Same -PminecraftVersion property as the Fabric and NeoForge modules. Values that aren't 1.x are
+// meant for the 26.x modules, so they're ignored here and this module falls back to its default version.
+def requested = providers.gradleProperty("minecraftVersion").orNull
+def minecraftVersion = "1.21.11"
+
+// 1.21.2 is valid for the Fabric and NeoForge 1.21 modules, but Paper has no 1.21.2. Gradle configures
+// every module on each run, so instead of failing the whole build this module just switches itself off.
+def skipThisVersion = requested == "1.21.2"
+
+if (requested != null && requested.startsWith("1.") && !skipThisVersion) {
+    if (!minecraftVersions.contains(requested)) {
+        throw new GradleException("Unsupported Minecraft version '$requested' for :paper-1.21. Supported: $minecraftVersions")
+    }
+    minecraftVersion = requested
+}
+
+if (skipThisVersion) {
+    logger.lifecycle("Paper has no 1.21.2 release - skipping :paper-1.21 for this build.")
+    tasks.configureEach { enabled = false }
+}
+
+dependencies {
+    if (skipThisVersion) return
+
+    compileOnly("io.papermc.paper:paper-api:${minecraftVersion}-R0.1-SNAPSHOT")
+
+    implementation(project(":common"))
+    implementation("org.postgresql:postgresql:42.7.3")
+    // PlaceholderAPI is its own plugin on the server, so it must not be bundled into this jar.
+    compileOnly("me.clip:placeholderapi:2.11.7")
+}
+
+base {
+    archivesName.set("${project.archives_base_name}-paper-${minecraftVersion}")
+}
+
+def pluginProps = [
+        "version"    : project.version,
+        "api_version": minecraftVersion
+]
+
+tasks.processResources {
+    inputs.properties(pluginProps)
+
+    filesMatching("plugin.yml") {
+        expand(pluginProps)
+    }
+}
+
+tasks.jar {
+    if (skipThisVersion) return
+
+    dependsOn(":common:jar")
+
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    from {
+        configurations.runtimeClasspath.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
+
+    exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA")
+}
+
+tasks.register("buildAllVersions") {
+    group = "build"
+    description = "Builds the plugin for all supported Minecraft 1.21.x versions."
+
+    def root = rootDir
+    def path = project.path
+
+    doLast {
+        def isWindows = System.getProperty("os.name").toLowerCase().contains("windows")
+        def gradlew = new File(root, isWindows ? "gradlew.bat" : "gradlew").absolutePath
+
+        minecraftVersions.each { version ->
+            println("======================================")
+            println("Building Minecraft $version")
+            println("======================================")
+
+            def process = new ProcessBuilder(gradlew, "${path}:build", "-PminecraftVersion=${version}")
+                    .directory(root)
+                    .inheritIO()
+                    .start()
+
+            if (process.waitFor() != 0) {
+                throw new GradleException("Build failed for Minecraft $version")
+            }
+
+            println("Finished Minecraft $version")
+        }
+    }
+}

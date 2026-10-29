@@ -22,5 +22,6 @@ include(
         "fabric-1.21",
         "neoforge",
         "neoforge-1.21",
-        "paper"
+        "paper",
+        "paper-1.21"
 )
