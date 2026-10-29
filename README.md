@@ -53,18 +53,22 @@ Each platform is split into two modules:
 * `fabric` / `neoforge` / `paper` - 26.x, Java 25
 * `fabric-1.21` / `neoforge-1.21` / `paper-1.21` - 1.21 - 1.21.11, Java 21
 
-The Fabric and 1.21 modules use the same `-PminecraftVersion` property, and each module only reacts to versions it supports.
-The 26.x NeoForge and Paper modules (`neoforge`, `paper`) use `neoforge_version` / `paper_version` from `gradle.properties` instead.
+Every module uses the same `-PminecraftVersion` property and only reacts to versions it supports
+(1.x versions go to the `-1.21` modules, 26.x versions to the others).
 
 ```
 # One version
 ./gradlew :fabric:build -PminecraftVersion=26.3
+./gradlew :neoforge:build -PminecraftVersion=26.3
+./gradlew :paper:build -PminecraftVersion=26.3
 ./gradlew :fabric-1.21:build -PminecraftVersion=1.21.5
 ./gradlew :neoforge-1.21:build -PminecraftVersion=1.21.5
 ./gradlew :paper-1.21:build -PminecraftVersion=1.21.5
 
 # Every version
 ./gradlew :fabric:buildAllVersions
+./gradlew :neoforge:buildAllVersions
+./gradlew :paper:buildAllVersions
 ./gradlew :fabric-1.21:buildAllVersions
 ./gradlew :neoforge-1.21:buildAllVersions
 ./gradlew :paper-1.21:buildAllVersions

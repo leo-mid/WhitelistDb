@@ -10,8 +10,40 @@ repositories {
     mavenCentral()
 }
 
+// Paper never released a 26.1 build (its first 26.x build is 26.1.1).
+def minecraftVersions = [
+        "26.3",
+        "26.2",
+        "26.1.2",
+        "26.1.1"
+]
+
+// Same -PminecraftVersion property as the Fabric and NeoForge modules. 1.x values are meant for the
+// 1.21 modules, so they're ignored here and this module falls back to its default version.
+def requested = providers.gradleProperty("minecraftVersion").orNull
+def minecraftVersion = "26.3"
+
+// 26.1 is valid for the Fabric and NeoForge modules, but Paper has no 26.1. Gradle configures every
+// module on each run, so instead of failing the whole build this module just switches itself off.
+def skipThisVersion = requested == "26.1"
+
+if (requested != null && !requested.startsWith("1.") && !skipThisVersion) {
+    if (!minecraftVersions.contains(requested)) {
+        throw new GradleException("Unsupported Minecraft version '$requested' for :paper. Supported: $minecraftVersions")
+    }
+    minecraftVersion = requested
+}
+
+if (skipThisVersion) {
+    logger.lifecycle("Paper has no 26.1 release - skipping :paper for this build.")
+    tasks.configureEach { enabled = false }
+}
+
 dependencies {
-    compileOnly("io.papermc.paper:paper-api:${project.paper_version}")
+    if (skipThisVersion) return
+
+    // Latest Paper build for the selected Minecraft version
+    compileOnly("io.papermc.paper:paper-api:${minecraftVersion}.build.+")
 
     implementation(project(":common"))
     implementation("org.postgresql:postgresql:42.7.3")
@@ -19,18 +51,25 @@ dependencies {
 }
 
 base {
-    archivesName.set("${project.archives_base_name}-paper-${project.paper_version}")
+    archivesName.set("${project.archives_base_name}-paper-${minecraftVersion}")
 }
 
+def pluginProps = [
+        "version"    : project.version,
+        "api_version": minecraftVersion
+]
+
 tasks.processResources {
-    inputs.property "version", project.version
+    inputs.properties(pluginProps)
 
     filesMatching("plugin.yml") {
-        expand version: project.version
+        expand(pluginProps)
     }
 }
 
 tasks.jar {
+    if (skipThisVersion) return
+
     dependsOn(":common:jar")
 
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
@@ -42,4 +81,34 @@ tasks.jar {
     }
 
     exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA")
+}
+
+tasks.register("buildAllVersions") {
+    group = "build"
+    description = "Builds the plugin for all supported Minecraft 26.x versions."
+
+    def root = rootDir
+    def path = project.path
+
+    doLast {
+        def isWindows = System.getProperty("os.name").toLowerCase().contains("windows")
+        def gradlew = new File(root, isWindows ? "gradlew.bat" : "gradlew").absolutePath
+
+        minecraftVersions.each { version ->
+            println("======================================")
+            println("Building Minecraft $version")
+            println("======================================")
+
+            def process = new ProcessBuilder(gradlew, "${path}:build", "-PminecraftVersion=${version}")
+                    .directory(root)
+                    .inheritIO()
+                    .start()
+
+            if (process.waitFor() != 0) {
+                throw new GradleException("Build failed for Minecraft $version")
+            }
+
+            println("Finished Minecraft $version")
+        }
+    }
 }

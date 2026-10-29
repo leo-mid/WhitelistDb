@@ -3,11 +3,42 @@ plugins {
     id 'java'
 }
 
-base { archivesName = "${project.archives_base_name}-neoforge-${project.neoforge_version}" }
+def minecraftVersions = [
+        "26.3",
+        "26.2",
+        "26.1.2",
+        "26.1.1",
+        "26.1"
+]
+
+// Same -PminecraftVersion property as the Fabric module. 1.x values are meant for the 1.21 modules,
+// so they're ignored here and this module falls back to its default version.
+def requested = providers.gradleProperty("minecraftVersion").orNull
+def minecraftVersion = "26.3"
+if (requested != null && !requested.startsWith("1.")) {
+    if (!minecraftVersions.contains(requested)) {
+        throw new GradleException("Unsupported Minecraft version '$requested' for :neoforge. Supported: $minecraftVersions")
+    }
+    minecraftVersion = requested
+}
+
+// Latest NeoForge build for each Minecraft version.
+// 26.1 and 26.1.1 never got a stable NeoForge release, so those use the last beta.
+def neoforgeVersions = [
+        "26.3"  : "26.3.0.99",
+        "26.2"  : "26.2.0.93",
+        "26.1.2": "26.1.2.124",
+        "26.1.1": "26.1.1.15-beta",
+        "26.1"  : "26.1.0.19-beta"
+]
+
+def neoforgeVersion = neoforgeVersions[minecraftVersion]
+
+base { archivesName = "${project.archives_base_name}-neoforge-${minecraftVersion}" }
 
 neoForge {
     enable {
-        version = project.neoforge_version
+        version = neoforgeVersion
         disableRecompilation = true
     }
 
@@ -24,8 +55,55 @@ dependencies {
     jarJar(implementation project(':common'))
 }
 
+// NeoForge versions start with the Minecraft version, e.g. 26.1.2 -> 26.1.2.x and 26.3 -> 26.3.0.x
+def mcParts = minecraftVersion.tokenize('.')
+def neoforgePrefix = mcParts.size() > 2 ? minecraftVersion : "${minecraftVersion}.0"
+
+def tomlProps = [
+        "version"           : project.version,
+        "minecraft_version" : minecraftVersion,
+        "neoforge_range"    : "[${neoforgePrefix},)"
+]
+
+processResources {
+    inputs.properties(tomlProps)
+    filesMatching("META-INF/neoforge.mods.toml") {
+        expand(tomlProps)
+    }
+}
+
 jar {
     manifest {
         attributes 'Implementation-Version': project.version
+    }
+}
+
+tasks.register("buildAllVersions") {
+    group = "build"
+    description = "Builds the mod for all supported Minecraft 26.x versions."
+
+    def root = rootDir
+    def path = project.path
+
+    doLast {
+        def isWindows = System.getProperty("os.name").toLowerCase().contains("windows")
+        def gradlew = new File(root, isWindows ? "gradlew.bat" : "gradlew").absolutePath
+
+        minecraftVersions.each { version ->
+            println("======================================")
+            println("Building Minecraft $version")
+            println("======================================")
+
+            def process = new ProcessBuilder(gradlew, "${path}:build", "-PminecraftVersion=${version}")
+                    .directory(root)
+                    .inheritIO()
+                    .start()
+
+            if (process.waitFor() != 0) {
+                throw new GradleException("Build failed for Minecraft $version")
+            }
+
+            println("Finished Minecraft $version")
+        }
     }
 }

@@ -4,7 +4,7 @@ license = "All-Rights-Reserved"
 
 [[mods]]
 modId            = "whitelistdb"
-version          = "${file.jarVersion}"
+version          = "${version}"
 displayName      = "WhitelistDb"
 description      = "Database-backed whitelist for NeoForge servers."
 logoFile         = "whitelistdb-logo.png"
@@ -12,13 +12,13 @@ logoFile         = "whitelistdb-logo.png"
 [[dependencies.whitelistdb]]
 modId       = "neoforge"
 type        = "required"
-versionRange = "[26.2,)"
+versionRange = "${neoforge_range}"
 ordering    = "NONE"
 side        = "SERVER"
 
 [[dependencies.whitelistdb]]
 modId       = "minecraft"
 type        = "required"
-versionRange = "[26.2,)"
+versionRange = "[${minecraft_version}]"
 ordering    = "NONE"
 side        = "SERVER"
