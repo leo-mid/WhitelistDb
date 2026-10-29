@@ -1,0 +1,141 @@
+plugins {
+    id 'net.neoforged.moddev'
+    id 'java'
+}
+
+def minecraftVersions = [
+        "1.21.11",
+        "1.21.10",
+        "1.21.9",
+        "1.21.8",
+        "1.21.7",
+        "1.21.6",
+        "1.21.5",
+        "1.21.4",
+        "1.21.3",
+        "1.21.2",
+        "1.21.1",
+        "1.21"
+]
+
+def requested = providers.gradleProperty("minecraftVersion").orNull
+def minecraftVersion = "1.21.11"
+if (requested != null && requested.startsWith("1.")) {
+    if (!minecraftVersions.contains(requested)) {
+        throw new GradleException("Unsupported Minecraft version '$requested' for :forge-1.21. Supported: $minecraftVersions")
+    }
+    minecraftVersion = requested
+}
+
+// Latest NeoForge build for each Minecraft version.
+// 1.21.2, 1.21.6, 1.21.7 and 1.21.9 never got a stable NeoForge release, so those use the last beta.
+def neoforgeVersions = [
+        "1.21.11": "21.11.48",
+        "1.21.10": "21.10.64",
+        "1.21.9" : "21.9.16-beta",
+        "1.21.8" : "21.8.57",
+        "1.21.7" : "21.7.25-beta",
+        "1.21.6" : "21.6.20-beta",
+        "1.21.5" : "21.5.101",
+        "1.21.4" : "21.4.161",
+        "1.21.3" : "21.3.100",
+        "1.21.2" : "21.2.1-beta",
+        "1.21.1" : "21.1.265",
+        "1.21"   : "21.0.167"
+]
+
+def neoforgeVersion = neoforgeVersions[minecraftVersion]
+// NeoForge versions are "21.<minecraft patch>.<build>", e.g. 1.21.5 -> 21.5.x
+def patch = minecraftVersion.tokenize('.').size() > 2 ? minecraftVersion.tokenize('.')[2].toInteger() : 0
+
+base { archivesName = "${project.archives_base_name}-neoforge-${minecraftVersion}" }
+
+// ---------------------------------------------------------------------------------------------
+// Version-specific source folders (src/compat/<name>/java). Only the ones matching the
+// selected Minecraft version are compiled, so the main code can stay identical for every 1.21.x.
+//
+//   profile_legacy    1.21   - 1.21.8   GameProfile is a class:  getName()
+//   profile_record    1.21.9 - 1.21.11  GameProfile is a record: name()
+//   permission_level  1.21   - 1.21.10  source.hasPermission(int)
+//   permission_check  1.21.11           Commands.hasPermission(PermissionCheck)
+// ---------------------------------------------------------------------------------------------
+def compatDirs = [
+        patch >= 9 ? "profile_record" : "profile_legacy",
+        patch >= 11 ? "permission_check" : "permission_level"
+]
+
+sourceSets {
+    main {
+        java {
+            compatDirs.each { srcDir("src/compat/$it/java") }
+        }
+    }
+}
+
+neoForge {
+    enable {
+        version = neoforgeVersion
+        disableRecompilation = true
+    }
+
+    mods {
+        whitelistdb {
+            sourceSet(sourceSets.main)
+        }
+    }
+}
+
+dependencies {
+    jarJar(implementation("org.postgresql:postgresql:42.7.3"))
+
+    jarJar(implementation project(':common'))
+}
+
+def tomlProps = [
+        "version"           : project.version,
+        "minecraft_version" : minecraftVersion,
+        "neoforge_range"    : "[21.${patch},)"
+]
+
+processResources {
+    inputs.properties(tomlProps)
+    filesMatching("META-INF/neoforge.mods.toml") {
+        expand(tomlProps)
+    }
+}
+
+jar {
+    manifest {
+        attributes 'Implementation-Version': project.version
+    }
+}
+
+tasks.register("buildAllVersions") {
+    group = "build"
+    description = "Builds the mod for all supported Minecraft 1.21.x versions."
+
+    def root = rootDir
+    def path = project.path
+
+    doLast {
+        def isWindows = System.getProperty("os.name").toLowerCase().contains("windows")
+        def gradlew = new File(root, isWindows ? "gradlew.bat" : "gradlew").absolutePath
+
+        minecraftVersions.each { version ->
+            println("======================================")
+            println("Building Minecraft $version")
+            println("======================================")
+
+            def process = new ProcessBuilder(gradlew, "${path}:build", "-PminecraftVersion=${version}")
+                    .directory(root)
+                    .inheritIO()
+                    .start()
+
+            if (process.waitFor() != 0) {
+                throw new GradleException("Build failed for Minecraft $version")
+            }
+
+            println("Finished Minecraft $version")
+        }
+    }
+}

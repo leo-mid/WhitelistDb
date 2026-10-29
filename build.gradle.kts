@@ -20,8 +20,9 @@ allprojects {
 subprojects {
     // Minecraft 26.x runs on Java 25, Minecraft 1.21.x runs on Java 21.
     // :common is bundled into both, so it targets Java 21 bytecode (which also runs fine on Java 25).
-    val toolchainVersion = if (name == "fabric-1.21") 21 else 25
-    val releaseVersion = if (name == "fabric-1.21" || name == "common") 21 else 25
+    val is121 = name.endsWith("-1.21")
+    val toolchainVersion = if (is121) 21 else 25
+    val releaseVersion = if (is121 || name == "common") 21 else 25
 
     plugins.withId("java") {
         extensions.configure<JavaPluginExtension> {

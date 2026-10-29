@@ -20,6 +20,7 @@ include(
         "common",
         "fabric",
         "fabric-1.21",
-        "forge",
+        "neoforge",
+        "neoforge-1.21",
         "paper"
 )
